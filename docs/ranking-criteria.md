@@ -7,13 +7,17 @@ an **AI policy** section. Verbatim, from the
 [osu-wiki source](https://raw.githubusercontent.com/ppy/osu-wiki/master/wiki/Ranking_criteria/en.md):
 
 > A beatmap's hit objects, hitsounds and timing must be created exclusively by
-> direct human input without the use of any generative tooling.
+> direct human input without the use of any generative tooling. Creating
+> beatmaps is a fundamentally creative process, so using shortcuts like
+> generative AI is unacceptable for ranking.
 
 The same section also bars substantially AI-generated image assets, videos and
 songs. Its stated intent:
 
 > The core intent of these rules is allowing osu! to remain a space to celebrate
-> human creativity, and its community a welcoming one to artists.
+> human creativity, and its community a welcoming one to artists. Allowing
+> exclusively human-created songs, artwork, and beatmaps goes hand-in-hand with
+> these goals.
 
 This is unambiguous and it applies to exactly what this repository produces.
 **Rankability is closed by rule, not by quality.** No amount of gate-passing
@@ -40,9 +44,14 @@ unrankable anyway, because the host must have mapped most of the set themselves.
 ## Uploading
 
 The plan this work came from asserted that *uploading* an AI map (to graveyard)
-is permitted while only *ranking* is prohibited. **That distinction is not stated
-in the Ranking Criteria text**, which addresses beatmaps in the ranking
-procedure. Treat the permissibility of uploading as unverified.
+is permitted while only *ranking* is prohibited.
+
+Checked directly: `Rules/en.md` and `Beatmapping/Beatmap_submission/en.md`
+contain **zero** mentions of AI or generative tooling. So the Ranking Criteria
+governs ranking and is *silent* on uploading. The RC's own wording ("unacceptable
+**for ranking**") implies that scope, but silence is not permission, and the
+explicit "uploading is allowed, ranking is not" phrasing is **community-sourced**
+(a forum post), not an official rule. It should not be attributed to the RC.
 
 It does not matter here, because nothing is uploaded.
 
@@ -60,13 +69,31 @@ there is no upload code path.
 
 ## The unranking incident
 
-The plan cited a specific case — *DOBERMAN INFINITY - The other story (TV Size)*,
-set 2396177, mapper "Fu Xuan", ranked 2025-08-30 and unranked in Nov 2025 —
-attributed to Mapperatorinator, the same tool used here. The plan itself was
-internally inconsistent about this, calling it "confirmed" in one place and
-"rumour" in another.
+The plan cited *DOBERMAN INFINITY - The other story (TV Size)*, set 2396177,
+mapper Fu Xuan — and was internally inconsistent, calling it "confirmed" in one
+place and "rumour" in another. It was checked against primary sources.
 
-**Status: UNVERIFIED.** No primary source was located during this work. It is
-recorded here as an unconfirmed report, not a fact.
+**The unranking is VERIFIED.** An official notice on the beatmap discussion page
+(posted by BanchoBot, 2025-11-18, recovered from Wayback captures of osu!'s own
+pages) reads:
 
-The prohibition above stands entirely on its own without it.
+> The team has determined with near certainty that AI assistance was used to
+> create one or more difficulties in this beatmap set. Because this violates the
+> ranking criteria, the set has been permanently removed from the ranked
+> category.
+
+The event chain matches: ranked 2025-08-30, disqualified and discussion-locked
+with reason `unrank` on 2025-11-18, status `graveyard` by 2025-11-22.
+
+**Two details in the plan are NOT supported:**
+
+1. **The tool was not identified as Mapperatorinator.** The official notice says
+   only "AI assistance". Nothing from osu! staff names any specific tool, so this
+   documentation does not either.
+2. **"Set deleted" was a separate, later event** — the set survived as graveyard
+   through at least 2025-11-30 and only 404'd afterwards.
+
+The claim that the mapper was removed from the BNG is community-sourced only.
+
+The prohibition above stands on its own regardless: it is a rule, not a
+precedent.

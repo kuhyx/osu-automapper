@@ -1,9 +1,10 @@
 """The no-upload boundary, enforced as a test rather than a promise.
 
-The osu! Ranking Criteria prohibits generative tooling in beatmap creation, and a
-map made with this exact upstream model was ranked and then unranked. So the
-boundary is structural: this package must contain no way to submit anything to
-osu!, and no credentials to do it with.
+The osu! Ranking Criteria prohibits generative tooling in beatmap creation, and
+osu! staff have permanently removed a ranked set after determining AI assistance
+was used (November 2025; no specific tool was named). So the boundary is
+structural: this package must contain no way to submit anything to osu!, and no
+credentials to do it with. See docs/ranking-criteria.md.
 """
 
 from __future__ import annotations
