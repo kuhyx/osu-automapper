@@ -196,6 +196,28 @@ transformer.
 Note `checkpoint.local_total_limit: 3` prunes older checkpoints, so a completed
 run leaves only the last three. Raise it if you want early-vs-late comparisons.
 
+## A gamemode=0 LoRA is silently ignored in mania
+
+Every adapter trained so far is `ckpt_subfolders: ["gamemode=0"]`. Loading one
+with `--gamemode 3` does **not** fail and does **not** corrupt the output -- it
+simply has no effect.
+
+Measured on `celldweller_weaponized.mp3`, 4K, difficulty 4.0, checkpoint_11,
+against the base-model sweep cells at the same seeds:
+
+| seed | objects | stars | hit objects vs base |
+|---|---:|---:|---|
+| 1 | 631 | 4.21* | byte-identical |
+| 2 | 630 | 3.97* | byte-identical |
+| 3 | 587 | 3.91* | byte-identical |
+
+Inference is deterministic at a fixed seed, so byte-identical output is proof
+the adapter never influenced generation, not a coincidence.
+
+The practical consequence: **do not report mania+LoRA numbers as a LoRA result.**
+A mania adapter has to be trained with mania in `ckpt_subfolders`; until then,
+mania output is base-model output whatever `--lora-path` says.
+
 ## Before spending the hours
 
 Run the blind test on stock-checkpoint output first (see
