@@ -12,9 +12,11 @@ from pathlib import Path
 from osu_automapper.blindtest import build_blindtest, score_blindtest
 from osu_automapper.blindtest.harness import BlindTest, pack_blindtest
 from osu_automapper.config import Paths
+from osu_automapper.corpus.pipeline import assemble, collect, probe_audio, write_corpus
 from osu_automapper.generate import GenerationError, GenerationRequest, generate
 from osu_automapper.parse import Mode
 from osu_automapper.repair import RepairError, repair_file
+from osu_automapper.stars import RosuStarRating, StarRatingError
 from osu_automapper.sweep.model import SweepGrid, SweepOutcome, iter_cells
 from osu_automapper.sweep.report import to_markdown
 from osu_automapper.sweep.runner import run_sweep
@@ -138,6 +140,51 @@ def run_sweep_command(args: argparse.Namespace) -> int:
     report_path.write_text(to_markdown(outcomes), encoding="utf-8")
     print(f"report: {report_path}")
     return EXIT_OK if all(o.generated for o in outcomes) else EXIT_FAILED
+
+
+def run_corpus_command(args: argparse.Namespace) -> int:
+    """Build webdataset shards from the local lazer library."""
+    paths = Paths.from_env()
+    destination = args.output or (paths.data_root / "corpus" / "compressed")
+    if not args.library.is_dir():
+        print(f"error: no lazer library at {args.library}", file=sys.stderr)
+        return EXIT_ERROR
+
+    print(f"scanning {args.library} ...", flush=True)
+    beatmaps, audio = collect(args.library, probe_audio, gamemode=args.gamemode)
+    print(f"  {len(beatmaps)} beatmaps (mode {args.gamemode}), {len(audio)} audio blobs")
+
+    rater = RosuStarRating()
+
+    def rate(path: Path) -> float:
+        try:
+            return rater.rate(path)
+        except StarRatingError:
+            return 0.0
+
+    samples, stats = assemble(beatmaps, audio, rate, gamemode=args.gamemode, limit=args.limit)
+    print(f"  {stats.mapsets} mapsets -> {stats.samples} usable ({stats.unmatched} without audio)")
+    if not samples:
+        print("error: nothing to write", file=sys.stderr)
+        return EXIT_ERROR
+    if args.dry_run:
+        print(f"dry run: would write ~{-(-stats.samples // args.shard_size)} shard(s)")
+        return EXIT_OK
+
+    def announce(path: Path, count: int) -> None:
+        print(f"  wrote {path.name}: {count} mapsets", flush=True)
+
+    stats = write_corpus(samples, destination, stats, args.shard_size, on_shard=announce)
+    manifest = destination.parent / "manifest.json"
+    manifest.write_text(stats.to_json(), encoding="utf-8")
+    print(f"{stats.shards} shard(s) -> {destination}")
+    print(f"manifest: {manifest}")
+    if stats.problems:
+        for problem in stats.problems[:10]:
+            print(f"  PROBLEM {problem}", file=sys.stderr)
+        return EXIT_FAILED
+    print("every shard verified")
+    return EXIT_OK
 
 
 def run_repair(args: argparse.Namespace) -> int:

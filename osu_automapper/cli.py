@@ -19,6 +19,7 @@ from osu_automapper.checks import run_checks
 from osu_automapper.commands import (
     run_blindtest_build,
     run_blindtest_score,
+    run_corpus_command,
     run_generate,
     run_repair,
     run_sweep_command,
@@ -113,6 +114,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sweep.add_argument("--report", type=Path, default=None, help="Write the markdown table here.")
     sweep.add_argument("--dry-run", action="store_true", help="Print the grid size and exit.")
+
+    corpus = sub.add_parser("corpus", help="Build training shards from the lazer library.")
+    corpus.add_argument(
+        "--library",
+        type=Path,
+        default=Path.home() / ".local/share/osu/files",
+        help="lazer blob store.",
+    )
+    corpus.add_argument("--output", type=Path, default=None, help="Where shards are written.")
+    corpus.add_argument("--gamemode", type=int, default=0, choices=[0, 1, 2, 3])
+    corpus.add_argument("--shard-size", type=int, default=256, help="Mapsets per shard.")
+    corpus.add_argument("--limit", type=int, default=None, help="Stop after N mapsets.")
+    corpus.add_argument("--dry-run", action="store_true", help="Report the plan, write nothing.")
     return parser
 
 
@@ -176,6 +190,7 @@ def main(argv: Sequence[str] | None = None, provider: StarRatingProvider | None 
         "blindtest": run_blindtest_build,
         "blindtest-score": run_blindtest_score,
         "sweep": run_sweep_command,
+        "corpus": run_corpus_command,
     }
     handler = dispatch.get(args.command)
     if handler is not None:
