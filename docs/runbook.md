@@ -87,20 +87,50 @@ echo "exit=$?"
 ./run.sh check <map.osu> --json          # machine-readable
 ```
 
-## Test song, without a scraper or a Realm reader
+## Test songs from the local lazer library
 
 lazer stores beatmaps content-addressed under `~/.local/share/osu/files/<a>/<ab>/<hash>`
-with no extensions. You do not need to read `client.realm` to get at them:
+with no extensions. You do not need a Realm reader to get at them: sniff the
+first bytes to classify a blob, then join maps to audio on ID3 tags plus
+duration. Full method, measured yields, and the approaches that **do not** work
+are in `docs/lazer-library.md` — read that before writing any extraction code.
 
-- `.osu` files are plain text starting with `osu file format v`
-- audio is findable with `ffprobe`, and its ID3 artist/title join to a map's
-  `[Metadata]` Artist/Title
+## Sweep
 
-That join is enough to pair a song with its human-made reference map, which is
-what the blind test needs.
+```bash
+./run.sh sweep --dry-run          # see the grid without spending GPU time
+./run.sh sweep                    # 3-7 stars, std + mania, 3 seeds, every song
+```
+
+Resumable: each cell writes its own JSON, and existing cells are skipped. See
+`docs/sweep.md` for the grid, the two-gate design, and the songs used.
 
 ## Blind test (Phase 3, never CI)
 
-`build_blindtest` shuffles real and generated maps behind labels A–F and saves
+`build_blindtest` shuffles real and generated maps behind labels A-F and saves
 the key; `score_blindtest` grades guesses afterwards. Judging map quality is a
-human act — it never gates a commit.
+human act -- it never gates a commit.
+
+```bash
+./run.sh blindtest --real <human.osu>... --generated <ai.osu>... \
+    --audio <song.mp3> --seed <n>
+# play the .osz in lazer WITHOUT reading the key, then:
+./run.sh blindtest-score <key>.json A=ai B=human C=ai D=human E=ai F=human
+```
+
+**Every entry must be the same song.** The pack ships one audio file shared by
+all difficulties, so mixing songs would give the answer away immediately. Match
+the generated maps' target difficulty to the human maps' *measured* star rating,
+or difficulty becomes the tell instead of mapping quality.
+
+Anonymisation covers more than metadata, because two non-obvious things leaked
+origin perfectly on the first real pack:
+
+| leak | why it gave the answer away |
+|---|---|
+| `[Events]` | human maps ship backgrounds/breaks/storyboards, generated maps ship none |
+| kiai (`effects` bit 0) | human maps kiai the chorus; the playfield pulses |
+
+Both are now stripped by `_anonymise`. When adding a new source of maps, diff a
+human entry against a generated one **before** playing, and check any field that
+differs systematically -- the gate does not catch leaks, only broken maps.
