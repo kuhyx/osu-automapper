@@ -59,3 +59,93 @@ def test_partial_guesses_are_scored() -> None:
     first = next(iter(test.answer_key))
     correct, total = score_blindtest(test, {first: test.answer_key[first]})
     assert (correct, total) == (1, 1)
+
+
+HUMAN_EVENTS = """osu file format v14
+
+[General]
+AudioFilename: a.mp3
+
+[Metadata]
+Creator:someone
+Version:Insane
+Tags:ranked mapper
+
+[Events]
+//Background and Video events
+0,0,"bg.jpg",0,0
+//Break Periods
+2,80184,92805
+//Storyboard Layer 0 (Background)
+Sprite,Foreground,Centre,"SB\\HP bar.png",320,240
+ M,0,80109,,322,406
+
+[TimingPoints]
+0,500,4,2,0,60,1,0
+
+[HitObjects]
+256,192,0,1,0,0:0:0:0:
+"""
+
+GENERATED_EVENTS = """osu file format v14
+
+[General]
+AudioFilename: a.mp3
+
+[Metadata]
+Creator:Mapperatorinator
+Version:5.0
+Tags:seed=42 difficulty=5.0
+
+[Events]
+//Background and Video events
+//Break Periods
+
+[TimingPoints]
+0,500,4,2,0,60,1,0
+
+[HitObjects]
+256,192,0,1,0,0:0:0:0:
+"""
+
+
+def _events_of(text: str) -> list[str]:
+    body = text.partition("[Events]")[2].partition("\n[")[0]
+    return [line for line in body.splitlines() if line.strip()]
+
+
+def test_the_events_section_cannot_identify_a_map_s_origin() -> None:
+    from osu_automapper.blindtest.harness import _anonymise
+
+    # A human map's backgrounds, breaks and storyboard would otherwise announce
+    # it: the generated maps have none of them.
+    human = _anonymise(HUMAN_EVENTS, "A")
+    generated = _anonymise(GENERATED_EVENTS, "B")
+    assert _events_of(human) == _events_of(generated)
+    assert "bg.jpg" not in human
+    assert "Sprite" not in human
+
+
+def test_anonymising_preserves_the_rest_of_the_map() -> None:
+    from osu_automapper.blindtest.harness import _anonymise
+
+    result = _anonymise(HUMAN_EVENTS, "C")
+    assert "[TimingPoints]" in result
+    assert "256,192,0,1,0,0:0:0:0:" in result
+    assert "Version:C" in result
+    assert "Creator:blindtest" in result
+    assert "ranked mapper" not in result
+
+
+def test_a_map_without_an_events_section_is_left_alone() -> None:
+    from osu_automapper.blindtest.harness import _strip_events
+
+    text = "osu file format v14\n\n[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    assert _strip_events(text) == text
+
+
+def test_events_at_the_end_of_a_file_are_still_stripped() -> None:
+    from osu_automapper.blindtest.harness import _strip_events
+
+    text = 'osu file format v14\n\n[Events]\n0,0,"bg.jpg",0,0\n'
+    assert "bg.jpg" not in _strip_events(text)

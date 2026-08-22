@@ -83,6 +83,24 @@ def score_blindtest(test: BlindTest, guesses: dict[str, bool]) -> tuple[int, int
     return correct, len(scored)
 
 
+def _strip_events(text: str) -> str:
+    """Replace the ``[Events]`` section with an empty one.
+
+    Metadata is not the only tell. Ranked maps ship backgrounds, break periods
+    and storyboards; generated maps ship none of them, so the section's mere size
+    identifies a map's origin before a note is played -- measured on a real pack:
+    every human entry had 20 event lines, every generated entry had 0. The
+    referenced images are not in the archive either, so leaving them in would
+    also make the human entries render differently in lazer.
+    """
+    head, marker, tail = text.partition("[Events]")
+    if not marker:
+        return text
+    _, next_marker, rest = tail.partition("\n[")
+    remainder = f"\n[{rest}" if next_marker else ""
+    return f"{head}[Events]\n//Background and Video events\n//Break Periods{remainder}"
+
+
 def _anonymise(text: str, label: str) -> str:
     """Rewrite a beatmap's identifying metadata to a bare label.
 
@@ -91,7 +109,7 @@ def _anonymise(text: str, label: str) -> str:
     """
     replacements = {"Version": label, "Creator": "blindtest", "Tags": ""}
     lines = []
-    for line in text.splitlines():
+    for line in _strip_events(text).splitlines():
         key, sep, _ = line.partition(":")
         if sep and key in replacements:
             lines.append(f"{key}:{replacements[key]}")
