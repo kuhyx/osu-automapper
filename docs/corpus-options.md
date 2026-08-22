@@ -63,6 +63,28 @@ checkpoint that `lora_kuhy.yaml` fine-tunes:
 So `ors` would mean training an older-architecture model from
 `configs/train/default.yaml`, **not** fine-tuning `OliBomby/Mapperatorinator-v32`.
 
+## "Do we need to upload it?" -- yes, for the `web` route
+
+Worth stating precisely, because a partial test suggested otherwise and was
+wrong. `WebDataset` uses two different HF calls, and only one of them tolerates
+a local path:
+
+| call | local path? |
+|---|---|
+| `load_dataset(repo_id, data_files=...)` (`web_dataset.py:95`) | **yes** -- reads local parquet fine |
+| `list_repo_files(repo_id, repo_type="dataset")` (`web_dataset.py:71-74`) | **no** -- always hits `huggingface.co/api/...` |
+
+`list_repo_files` runs unconditionally in `__init__`, so it fails before the
+loader ever reaches `load_dataset`. Verified: a hand-built local cache directory
+(`hub/datasets--<ns>--<name>/snapshots/<sha>/`) with `refs/main` still raised
+`OfflineModeIsEnabled`, and `HF_HUB_OFFLINE=1` fails for the *already-downloaded*
+`project-riz/osu-beatmaps` too -- there is no cached file listing to fall back
+on. Upstream has no `local_files_only` option anywhere.
+
+So on the `web` route the corpus must exist as a real HF dataset repo. It can be
+**private** -- nothing here needs it public -- but it does have to be uploaded,
+and upstream must not be modified to avoid it (it is a third-party sibling).
+
 ## What this leaves
 
 Three real options, in rough order of cost:
