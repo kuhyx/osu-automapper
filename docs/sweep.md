@@ -79,3 +79,22 @@ where the human maps for the blind test come from. See `docs/lazer-library.md`.
 
 A gate failure is a *result*, not a tooling error, so it does not fail the
 command. A cell that never produced a map does.
+
+## The songs swept
+
+A manifest is written to `~/osu-automapper_data/sweep/songs.json`; this table is
+the committed copy, because a "By song" row is uninterpretable without the BPM.
+Five were pulled from the lazer library to span the tempo range (see
+`docs/lazer-library.md`); `night_of_knights` predates the sweep.
+
+| file | artist - title | BPM | length |
+|---|---|---:|---:|
+| `celldweller_weaponized.mp3` | Celldweller - Weaponized | 100 | 63 s |
+| `dschinghis_khan_moskau.mp3` | Dschinghis Khan - Moskau | 131 | 272 s |
+| `night_of_knights.mp3` | beatMARIO - Night of Knights | 153 | 203 s |
+| `pegboard_nerds_emoji.mp3` | Pegboard Nerds - Emoji | 163 | 220 s |
+| `pup_free_at_last.mp3` | PUP - Free At Last | 179 | 155 s |
+| `toby_fox_megalovania.mp3` | toby fox - MEGALOVANIA | 240 | 156 s |
+
+Every one of them also has human-made difficulties in the local lazer library on
+the *same* audio, which is what makes a controlled blind test possible.
