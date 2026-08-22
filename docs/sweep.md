@@ -69,6 +69,31 @@ range** over more seeds on one.
 The songs used here were pulled from the local lazer library, which is also
 where the human maps for the blind test come from. See `docs/lazer-library.md`.
 
+## First measured finding: the song dominates
+
+Partway through the first full sweep, with two songs done:
+
+| song | BPM | cells | passed | `objects_snapped` failures |
+|---|---:|---:|---:|---:|
+| `celldweller_weaponized` | 100 | 30 | 23 | 1 |
+| `dschinghis_khan_moskau` | 131 | 22 | 0 | 22 |
+
+Every Moskau cell failed, at every difficulty, in both gamemodes. The cause is
+the song, not the difficulty: Moskau is a 1970s recording with **43 uninherited
+timing points** and drifting BPM, and the model places objects 5-10 ms off the
+grid just after a timing-point change (measured: 9.00 ms, 5.00 ms, 10.00 ms
+against the correct active red line, versus a 2 ms tolerance and the ~1.4 ms p99
+error seen across 300 ranked maps).
+
+That is a real model limitation, confirmed by re-deriving the snap error by hand
+against the active timing point rather than trusting the gate. **Do not respond
+by loosening `SNAP_TOLERANCE_MS`** -- see the divisor-family note in
+`docs/gates.md`.
+
+The methodological point is the important one: a sweep of one song would have
+concluded "the model is reliable" or "the model is broken" purely on which song
+was picked. Spend the budget on songs, not seeds.
+
 ## Exit codes
 
 | Code | Meaning |
