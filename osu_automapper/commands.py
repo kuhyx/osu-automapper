@@ -15,6 +15,9 @@ from osu_automapper.config import Paths
 from osu_automapper.generate import GenerationError, GenerationRequest, generate
 from osu_automapper.parse import Mode
 from osu_automapper.repair import RepairError, repair_file
+from osu_automapper.sweep.model import SweepGrid, SweepOutcome, iter_cells
+from osu_automapper.sweep.report import to_markdown
+from osu_automapper.sweep.runner import run_sweep
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -85,6 +88,56 @@ def run_blindtest_score(args: argparse.Namespace) -> int:
             origin = "generated" if entry.generated else "human"
             print(f"  {mark} {entry.label}: {origin}  ({Path(entry.source).name})")
     return EXIT_OK
+
+
+def _sweep_grid(args: argparse.Namespace, paths: Paths) -> SweepGrid:
+    """Build the grid described by the parsed arguments.
+
+    Raises:
+        ValueError: when no audio is available to sweep over.
+
+    """
+    songs = list(args.songs) if args.songs else sorted(paths.songs.glob("*.mp3"))
+    if not songs:
+        raise ValueError(f"no songs given and none found in {paths.songs}")
+    # Base is always swept so every adapter has something to be compared against.
+    adapters: list[Path | None] = [None, *(args.lora_paths or [])]
+    return SweepGrid(
+        songs=songs,
+        difficulties=list(args.difficulties),
+        modes=[Mode(m) for m in args.gamemodes],
+        seeds=list(args.seeds),
+        adapters=adapters,
+        mania_keycount=args.keycount,
+    )
+
+
+def run_sweep_command(args: argparse.Namespace) -> int:
+    """Run a reliability sweep and write its markdown report."""
+    paths = Paths.from_env()
+    try:
+        grid = _sweep_grid(args, paths)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
+    print(f"grid: {grid.size} cells ({len(grid.songs)} songs)")
+    if args.dry_run:
+        for cell in iter_cells(grid):
+            print(f"  {cell.label}")
+        return EXIT_OK
+
+    def progress(outcome: SweepOutcome) -> None:
+        state = (
+            "gen-fail" if not outcome.generated else ("pass" if outcome.repaired_passed else "FAIL")
+        )
+        print(f"  {outcome.label}: {state} ({outcome.duration_seconds:.0f}s)", flush=True)
+
+    outcomes = run_sweep(grid, paths.sweep, paths.out / "sweep", on_result=progress)
+    report_path = args.report or (paths.sweep / "REPORT.md")
+    report_path.write_text(to_markdown(outcomes), encoding="utf-8")
+    print(f"report: {report_path}")
+    return EXIT_OK if all(o.generated for o in outcomes) else EXIT_FAILED
 
 
 def run_repair(args: argparse.Namespace) -> int:

@@ -57,3 +57,8 @@ class Paths:
     def blindtest(self) -> Path:
         """Blind-test shuffle keys and packs."""
         return self.data_root / "blindtest"
+
+    @property
+    def sweep(self) -> Path:
+        """Per-cell reliability-sweep results, one JSON file each."""
+        return self.data_root / "sweep"

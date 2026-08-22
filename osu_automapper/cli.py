@@ -21,6 +21,7 @@ from osu_automapper.commands import (
     run_blindtest_score,
     run_generate,
     run_repair,
+    run_sweep_command,
 )
 from osu_automapper.osz import OszError, check_osz_importable
 from osu_automapper.parse import BeatmapParseError, parse_beatmap
@@ -96,6 +97,22 @@ def build_parser() -> argparse.ArgumentParser:
     score = sub.add_parser("blindtest-score", help="Score guesses against a saved key.")
     score.add_argument("key", type=Path, help="Path to the saved <ts>.json key.")
     score.add_argument("guess", nargs="+", help="Guesses as A=ai B=human ...")
+
+    sweep = sub.add_parser("sweep", help="Gate a grid of generations and report reliability.")
+    sweep.add_argument("--songs", type=Path, nargs="+", default=None, help="Audio files.")
+    sweep.add_argument("--difficulties", type=float, nargs="+", default=[3.0, 4.0, 5.0, 6.0, 7.0])
+    sweep.add_argument("--gamemodes", type=int, nargs="+", default=[0, 3], choices=[0, 1, 2, 3])
+    sweep.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
+    sweep.add_argument("--keycount", type=int, default=4, help="Mania key count.")
+    sweep.add_argument(
+        "--lora-paths",
+        type=Path,
+        nargs="+",
+        default=None,
+        help="Adapters; base is always included.",
+    )
+    sweep.add_argument("--report", type=Path, default=None, help="Write the markdown table here.")
+    sweep.add_argument("--dry-run", action="store_true", help="Print the grid size and exit.")
     return parser
 
 
@@ -158,6 +175,7 @@ def main(argv: Sequence[str] | None = None, provider: StarRatingProvider | None 
         "repair": run_repair,
         "blindtest": run_blindtest_build,
         "blindtest-score": run_blindtest_score,
+        "sweep": run_sweep_command,
     }
     handler = dispatch.get(args.command)
     if handler is not None:
