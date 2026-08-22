@@ -206,6 +206,12 @@ Three things about this script are deliberate:
   after every shard verifies, so its absence means the build did not finish and
   the shards are not known to be good.
 
+**Uploaded 2026-08-22** to private `kuhy/osu-mapsets-lazer`: 9 shards (1.3 GB,
+562 mapsets) under `data/`, plus `manifest.json`. Verified after the fact that
+the repo still reports `private: true`, and that upstream's own
+`list_repo_files` -- the call that forced the upload in the first place -- sees
+all 9 shards.
+
 Neither the `hf` CLI nor `huggingface_hub` is on `PATH` or in this repo's venv;
 both are read out of the upstream sibling's venv
 (`~/Mapperatorinator/.venv/`), which is never modified. The manifest is uploaded
