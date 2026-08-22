@@ -38,6 +38,17 @@ HF_HOME=~/osu-automapper_data/hf .venv/bin/python osuT5/train.py \
 Confirmed on launch: 11,206,656 trainable of 227,511,552 total parameters
 (4.9%), base weights frozen.
 
+### Sizing, measured rather than guessed
+
+A first run at `batch_size: 8, grad_acc: 8` used only **4.9 GB of 24 GB** and
+ran at **~1.1 s/step** once past warmup, finishing 400 steps in about seven
+minutes — far too small to be worth the setup. The shipped config is therefore
+`batch_size: 24, total_steps: 3000`, which sits at ~8.5 GB and keeps the GPU
+pinned at 100%.
+
+The first step of a run is slow (~13 s) while the streaming dataloader fills;
+do not read that as the steady-state rate.
+
 ### Two overrides that config needs, and why
 
 - **`attn_implementation: 'sdpa'`** — `v32.yaml` asks for `flash_attention_2`,

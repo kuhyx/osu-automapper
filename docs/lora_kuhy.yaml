@@ -43,10 +43,13 @@ optim:
   name: muon
   base_lr: 0.0004
   base_lr_2: 0.0001
-  batch_size: 8                  # fits comfortably in 24GB beside the base model
+  # Measured on the 3090: batch 8 x acc 8 used only 4.9GB of 24GB and ran at
+  # ~1.1 s/step, so 400 steps would have finished in ~7 minutes. Sized up to
+  # actually use the card and the available window.
+  batch_size: 24
   grad_acc: 8
-  total_steps: 400
-  warmup_steps: 20
+  total_steps: 3000
+  warmup_steps: 100
   sustain_steps: 0
   weight_decay: 0.01
   lr_scheduler: cosine
@@ -66,7 +69,7 @@ lora_metadata:
 # default checkpoint.every_steps is 5000, which would never fire in a 400-step
 # run and leave nothing on disk.
 checkpoint:
-  every_steps: 100
+  every_steps: 250
   local_total_limit: 3
 
 logging:
