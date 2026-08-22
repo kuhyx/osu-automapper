@@ -11,6 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      # The corpus tests decode and re-encode real audio rather than mocking
+      # it, so ffmpeg/ffprobe are a genuine test dependency, not a convenience.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Create venv and install
         run: |
           uv venv --python 3.12 .venv
@@ -33,4 +37,4 @@ jobs:
       - name: Shellcheck
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck install.sh run.sh
+          shellcheck install.sh run.sh scripts/*.sh
