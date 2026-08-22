@@ -82,10 +82,20 @@ what inference consumes:
 ./run.sh generate <song.mp3> <out> --difficulty 5.0 --lora-path <lora-dir>
 ```
 
-Verified at step 250: with seed and difficulty held constant, the base model
-produced 973 objects and the LoRA 928 — a materially different map that still
-passed all 14 checks at 4.68 stars. Comparing against a fixed seed like this is
-the cheapest way to confirm an adapter is actually loaded and doing something.
+Verified at step 250 with seed (555) and difficulty (5.0) held constant:
+
+| | base | LoRA |
+|---|---|---|
+| objects | 973 | 928 |
+| circles | 679 | 616 |
+| sliders | 293 | 312 |
+| spinners | 1 | 0 |
+| shared timestamps | — | 80% |
+
+The LoRA map still passed all 14 checks at 4.68 stars. Object *count* alone is
+weak evidence; the shifted slider-to-circle ratio is what shows the adapter is
+changing style rather than just reshuffling. Fixed-seed comparison like this is
+the cheapest way to prove an adapter is loaded rather than silently ignored.
 
 ## Scheduling
 
