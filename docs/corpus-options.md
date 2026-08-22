@@ -162,3 +162,37 @@ lazer keeps no osu! web metadata, so two fields are *asserted* rather than known
 
 Neither is load-bearing for training, but neither should be reported as real
 osu! metadata.
+
+## Uploading it (option 1's other half)
+
+```bash
+./scripts/upload_corpus.sh --dry-run    # check the repo and privacy, send nothing
+./scripts/upload_corpus.sh              # create if needed, verify private, upload
+```
+
+The default destination is the **private** dataset repo `kuhy/osu-mapsets-lazer`
+(override with `--repo-id` or `REPO_ID`).
+
+Three things about this script are deliberate:
+
+- **It lives in `scripts/`, not in the package.**
+  `tests/test_no_upload_boundary.py` forbids the bare word `upload` anywhere
+  under `osu_automapper/`, because that package must contain no path capable of
+  submitting a beatmap to osu!. Publishing a training corpus to Hugging Face is
+  a different act, but the boundary is kept blunt and structural rather than
+  clever, so the uploader stays outside the package it protects.
+- **Privacy is read back off the Hub API before any bytes move.**
+  `hf repo create --private` is honoured only when that call is the one that
+  creates the repo, so an existing *public* repo would happily accept the upload
+  and stay public. `scripts/hf_repo_privacy.py` asks the API what the repo
+  actually is, and the script refuses on anything but an explicit `true` — a
+  network or auth failure never reads as "private".
+- **It refuses to run without `manifest.json`.** The manifest is written only
+  after every shard verifies, so its absence means the build did not finish and
+  the shards are not known to be good.
+
+Neither the `hf` CLI nor `huggingface_hub` is on `PATH` or in this repo's venv;
+both are read out of the upstream sibling's venv
+(`~/Mapperatorinator/.venv/`), which is never modified. The manifest is uploaded
+alongside the shards because it lives one level *above* `compressed/` and would
+otherwise be left behind.
