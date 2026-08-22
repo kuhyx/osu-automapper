@@ -161,11 +161,19 @@ lazer keeps no osu! web metadata, so two fields are *asserted* rather than known
   stable across rebuilds. Note these are *not* what the year is derived from:
   dating reads the real `BeatmapSetID` off the group key, so a content hash
   never reaches `year_for_set_id`.
-- **A 2020 date is ambiguous.** `FALLBACK_DATE` is `2020-01-01`, the same value
-  a genuinely-2020 set gets, so mapsets grouped by artist+title (no id to date
-  from) are indistinguishable from real 2020 ones in the built shards. Measured
-  on this corpus, 2020 holds 100 samples against a 14-56 range elsewhere, so
-  most of that spike is the fallback rather than a real 2020 cluster.
+- **A 2020 date is ambiguous, and 13% of the corpus is on it.** `FALLBACK_DATE`
+  is `2020-01-01`, the same value a genuinely-2020 set gets, so mapsets grouped
+  by artist+title (no id to date from) cannot be told apart from real 2020 ones.
+  Counted on the built shards: **75 of 562 samples (13.3%) carry no usable
+  `BeatmapSetID`** and take the fallback, so of the 100 samples dated 2020 only
+  **25 are actually 2020**.
+
+  This matters more than a metadata wart, because `add_year_token: true` means
+  every one of those 75 trains the *2020* token specifically -- a milder form of
+  the single-year pile-up `dates.py` exists to prevent. It is a seventh of the
+  corpus rather than the bulk, so it skews the year distribution without
+  dominating it. If that becomes a problem, dating those sets from their audio
+  or dropping them beats moving the fallback to a year nobody asks for.
 
 Neither is load-bearing for training, but neither should be reported as real
 osu! metadata.

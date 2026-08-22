@@ -29,7 +29,12 @@ import zipfile
 from pathlib import Path
 
 # Separating keys that are deliberately left authored; see docs/runbook.md.
-ALLOWED = frozenset({"SliderMultiplier", "SliderTickRate", "AudioFilename", "Version"})
+# SliderMultiplier stays because normalising it stretches human sliders and
+# corrupts the entries under test; Version is the label itself; AudioFilename is
+# rewritten to the packed audio at build time. SliderTickRate is NOT here: it was
+# uniform across the measured pack, so if it ever starts separating the groups
+# that is news and should be flagged rather than waved through.
+ALLOWED = frozenset({"SliderMultiplier", "AudioFilename", "Version"})
 
 
 def header_fields(text: str) -> dict[str, str]:
