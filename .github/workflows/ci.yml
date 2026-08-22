@@ -23,6 +23,8 @@ jobs:
         run: .venv/bin/mypy --strict osu_automapper tests
       - name: Pytest (100% branch coverage enforced)
         run: .venv/bin/pytest
+      - name: LoRA training config sanity
+        run: python3 scripts/check_training_config.py
 
   shell:
     runs-on: ubuntu-latest

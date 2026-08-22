@@ -37,6 +37,13 @@ repos:
         language: system
         types: [shell]
 
+      - id: training-config
+        name: LoRA training config sanity
+        entry: python3 scripts/check_training_config.py
+        language: system
+        files: ^docs/lora_kuhy\.yaml$
+        pass_filenames: false
+
       - id: no-suppressions
         name: block noqa / type-ignore
         entry: '# *(noqa|type: *ignore)'
