@@ -16,6 +16,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from osu_automapper.checks import run_checks
+from osu_automapper.commands import (
+    run_blindtest_build,
+    run_blindtest_score,
+    run_generate,
+)
 from osu_automapper.osz import OszError, check_osz_importable
 from osu_automapper.parse import BeatmapParseError, parse_beatmap
 from osu_automapper.report import CheckResult, Report
@@ -61,6 +66,28 @@ def build_parser() -> argparse.ArgumentParser:
     osz = sub.add_parser("check-osz", help="Validate a .osz archive for import.")
     osz.add_argument("path", type=Path, help="Path to the .osz file.")
     osz.add_argument("--json", action="store_true", help="Emit JSON instead of text.")
+
+    gen = sub.add_parser("generate", help="Generate a beatmap via Mapperatorinator.")
+    gen.add_argument("audio", type=Path, help="Input audio file.")
+    gen.add_argument("output", type=Path, help="Output directory.")
+    gen.add_argument("--gamemode", type=int, default=0, choices=[0, 1, 2, 3])
+    gen.add_argument("--difficulty", type=float, default=5.5, help="Target star rating.")
+    gen.add_argument("--year", type=int, default=2023, help="Mapping-style year.")
+    gen.add_argument("--seed", type=int, default=None, help="Seed, for reproducibility.")
+    gen.add_argument("--keycount", type=int, default=None, help="Mania key count.")
+    gen.add_argument("--title", default=None, help="Song title (else 'Unknown Title').")
+    gen.add_argument("--artist", default=None, help="Song artist.")
+    gen.add_argument("--preview-time", type=int, default=None, help="Preview point in ms.")
+
+    build = sub.add_parser("blindtest", help="Pack real and generated maps anonymously.")
+    build.add_argument("--real", type=Path, nargs="+", required=True)
+    build.add_argument("--generated", type=Path, nargs="+", required=True)
+    build.add_argument("--audio", type=Path, default=None, help="Audio to pack alongside.")
+    build.add_argument("--seed", type=int, default=None, help="Shuffle seed.")
+
+    score = sub.add_parser("blindtest-score", help="Score guesses against a saved key.")
+    score.add_argument("key", type=Path, help="Path to the saved <ts>.json key.")
+    score.add_argument("guess", nargs="+", help="Guesses as A=ai B=human ...")
     return parser
 
 
@@ -117,10 +144,13 @@ def run_check_osz(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None, provider: StarRatingProvider | None = None) -> int:
     """CLI entry point."""
     args = build_parser().parse_args(argv)
-    if args.command == "check-osz":
-        return run_check_osz(args)
+    dispatch = {
+        "check-osz": run_check_osz,
+        "generate": run_generate,
+        "blindtest": run_blindtest_build,
+        "blindtest-score": run_blindtest_score,
+    }
+    handler = dispatch.get(args.command)
+    if handler is not None:
+        return handler(args)
     return run_check(args, provider)
-
-
-if __name__ == "__main__":  # pragma: no cover - module entry
-    raise SystemExit(main())

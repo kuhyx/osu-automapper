@@ -7,7 +7,9 @@ name = "osu-automapper"
 version = "0.1.0"
 description = "Reproducible generation and deterministic quality gates for AI-generated osu! beatmaps."
 requires-python = ">=3.12"
-dependencies = ["slider>=0.7", "rosu-pp-py==3.1.0"]
+# No slider: parse.py is hand-rolled so it can REPORT malformed model output
+# instead of raising on it. rosu-pp-py provides star ratings without osu-tools.
+dependencies = ["rosu-pp-py==3.1.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "mypy>=1.11", "ruff>=0.6"]

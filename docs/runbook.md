@@ -31,8 +31,20 @@ what keeps the test suite at 100% branch coverage and CI free of CUDA.
 
 ## Generate
 
-Upstream's Hydra config is `configs/inference/v32.yaml` (there is no
-`configs/inference.yaml`).
+Through this repo (records every input, so a run is repeatable):
+
+```bash
+./run.sh generate ~/osu-automapper_data/songs/<song>.mp3 \
+  ~/osu-automapper_data/out/std \
+  --difficulty 5.5 --year 2023 --seed 1337 \
+  --title "<Title>" --artist "<Artist>" --preview-time 1598
+
+# mania
+./run.sh generate <song.mp3> <out> --gamemode 3 --difficulty 4.5 --keycount 4
+```
+
+Or drive upstream directly. Its Hydra config is `configs/inference/v32.yaml`
+(there is no `configs/inference.yaml`).
 
 ```bash
 cd ~/Mapperatorinator

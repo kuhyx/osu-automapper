@@ -114,6 +114,17 @@ def test_generate_success_returns_output_path(installed_paths: Paths, tmp_path: 
     assert runner.env["HF_HOME"] == str(installed_paths.hf_home)
 
 
+def test_generate_augments_environment_rather_than_replacing_it(
+    installed_paths: Paths, tmp_path: Path
+) -> None:
+    """A bare env would strip PATH/HOME and break upstream's interpreter."""
+    request = GenerationRequest(audio_path=tmp_path / "a.mp3", output_path=tmp_path / "out")
+    runner = FakeRunner()
+    generate(request, installed_paths, runner)
+    assert "PATH" in runner.env
+    assert runner.env["HF_HOME"] == str(installed_paths.hf_home)
+
+
 def test_generate_raises_when_upstream_missing(tmp_path: Path) -> None:
     paths = Paths(mapperatorinator_home=tmp_path / "absent", data_root=tmp_path / "data")
     request = GenerationRequest(audio_path=tmp_path / "a.mp3", output_path=tmp_path / "out")

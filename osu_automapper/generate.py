@@ -7,6 +7,7 @@ CUDA-free while still exercising every line of our own code.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -138,7 +139,9 @@ def generate(
     result = execute(
         command,
         cwd=str(resolved.mapperatorinator_home),
-        env={"HF_HOME": str(resolved.hf_home)},
+        # Augment, never replace: a bare env strips PATH/HOME and upstream's
+        # python cannot even find its own toolchain.
+        env={**os.environ, "HF_HOME": str(resolved.hf_home)},
         capture_output=True,
         text=True,
         check=False,
