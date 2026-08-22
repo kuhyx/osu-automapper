@@ -158,7 +158,14 @@ lazer keeps no osu! web metadata, so two fields are *asserted* rather than known
   sample invisible to `ranked_statuses: [1, 2]`.
 - **`beatmap_id` / `creator_id` are content hashes**, since lazer does not retain
   ids for every map. The loader only uses them as identity, and hashing is
-  stable across rebuilds.
+  stable across rebuilds. Note these are *not* what the year is derived from:
+  dating reads the real `BeatmapSetID` off the group key, so a content hash
+  never reaches `year_for_set_id`.
+- **A 2020 date is ambiguous.** `FALLBACK_DATE` is `2020-01-01`, the same value
+  a genuinely-2020 set gets, so mapsets grouped by artist+title (no id to date
+  from) are indistinguishable from real 2020 ones in the built shards. Measured
+  on this corpus, 2020 holds 100 samples against a 14-56 range elsewhere, so
+  most of that spike is the fallback rather than a real 2020 cluster.
 
 Neither is load-bearing for training, but neither should be reported as real
 osu! metadata.
