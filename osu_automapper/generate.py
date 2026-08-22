@@ -72,6 +72,7 @@ class GenerationRequest:
     title: str | None = None
     artist: str | None = None
     preview_time: int | None = None
+    lora_path: Path | None = None
     export_osz: bool = True
     extra: dict[str, str] = field(default_factory=dict)
 
@@ -91,6 +92,8 @@ class GenerationRequest:
             "preview_time": self.preview_time,
         }
         overrides += [f"{key}={value}" for key, value in optional.items() if value is not None]
+        if self.lora_path is not None:
+            overrides.append(f"lora_path={self.lora_path}")
         # Quoted: titles and artists routinely contain spaces and punctuation.
         for key, value in (("title", self.title), ("artist", self.artist)):
             if value is not None:

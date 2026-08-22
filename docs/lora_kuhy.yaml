@@ -72,7 +72,13 @@ checkpoint:
   every_steps: 250
   local_total_limit: 3
 
+# maybe_save_checkpoint() calls accelerator.get_tracker("wandb") unconditionally,
+# and accelerate RAISES when trackers exist but none match that name. With
+# log_with='tensorboard' every checkpoint save therefore crashes the run --
+# after the LoRA is written, so checkpoints survive, but training stops.
+# Using wandb in offline mode keeps upstream's code path valid and writes
+# nothing to the network, which avoids patching a third-party repo.
 logging:
-  log_with: 'tensorboard'        # no W&B account needed
+  log_with: 'wandb'
   mode: offline
   every_steps: 10

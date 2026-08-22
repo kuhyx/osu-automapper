@@ -55,25 +55,37 @@ the run by sampling two step numbers a minute apart rather than trusting
 Checkpoints every 250 steps (~12 min) mean the run can be stopped at any point
 and still yield a usable adapter.
 
-### Two overrides that config needs, and why
+### Three overrides that config needs, and why
 
 - **`attn_implementation: 'sdpa'`** — `v32.yaml` asks for `flash_attention_2`,
   but `flash-attn` is absent from `requirements.txt` (Docker-only), so training
   dies with `ImportError` at model construction. Inference is unaffected because
   it defaults to `auto` and falls back on its own.
-- **`checkpoint.every_steps: 100`** — the default is 5000, which would never
+- **`checkpoint.every_steps: 250`** — the default is 5000, which would never
   fire in a shorter run and would leave nothing on disk.
+- **`logging.log_with: 'wandb'` with `mode: offline`** — counter-intuitive, but
+  required. `maybe_save_checkpoint()` calls `accelerator.get_tracker("wandb")`
+  unconditionally, and `accelerate` *raises* when trackers exist but none carry
+  that name. Setting `tensorboard` therefore crashes the run at the first
+  checkpoint. Offline wandb keeps upstream's code path valid, needs no account
+  and touches no network. Export `WANDB_MODE=offline WANDB_SILENT=true` too.
+
+  The crash lands *after* the adapter is written, so a run killed this way still
+  leaves a usable LoRA on disk — which is how the step-250 adapter survived.
 
 A style LoRA needs **≥10 style-consistent maps** to be worth training; fewer and
-it memorises rather than generalises. The result is consumed at inference
-through `lora_path=`:
+it memorises rather than generalises. Each checkpoint writes a PEFT adapter to `checkpoints/checkpoint_N/lora/`
+(~95 MB, r=64, alpha=128, targeting `Wq`/`Wkv`/`Wqkv`/`Wo`). That directory is
+what inference consumes:
 
 ```bash
-.venv/bin/python inference.py \
-  audio_path=<song.mp3> output_path=<out> \
-  gamemode=0 difficulty=5.5 year=2023 \
-  lora_path=<path/to/lora>
+./run.sh generate <song.mp3> <out> --difficulty 5.0 --lora-path <lora-dir>
 ```
+
+Verified at step 250: with seed and difficulty held constant, the base model
+produced 973 objects and the LoRA 928 — a materially different map that still
+passed all 14 checks at 4.68 stars. Comparing against a fixed seed like this is
+the cheapest way to confirm an adapter is actually loaded and doing something.
 
 ## Scheduling
 

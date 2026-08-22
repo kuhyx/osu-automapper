@@ -79,6 +79,9 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--title", default=None, help="Song title (else 'Unknown Title').")
     gen.add_argument("--artist", default=None, help="Song artist.")
     gen.add_argument("--preview-time", type=int, default=None, help="Preview point in ms.")
+    gen.add_argument(
+        "--lora-path", type=Path, default=None, help="Fine-tuned LoRA adapter directory."
+    )
 
     repair = sub.add_parser("repair", help="Strip known model artifacts from a beatmap.")
     repair.add_argument("path", type=Path, help="Path to the .osu file.")

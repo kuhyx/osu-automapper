@@ -34,6 +34,7 @@ def run_generate(args: argparse.Namespace) -> int:
         title=args.title,
         artist=args.artist,
         preview_time=args.preview_time,
+        lora_path=args.lora_path,
     )
     try:
         output = generate(request)

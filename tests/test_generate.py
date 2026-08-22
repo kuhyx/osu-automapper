@@ -76,6 +76,16 @@ def test_optional_overrides_omitted_when_unset(tmp_path: Path) -> None:
     assert not any(o.startswith("seed=") for o in overrides)
     assert not any(o.startswith("keycount=") for o in overrides)
     assert not any(o.startswith("title=") for o in overrides)
+    assert not any(o.startswith("lora_path=") for o in overrides)
+
+
+def test_lora_path_override_included_when_set(tmp_path: Path) -> None:
+    """A fine-tuned adapter is passed through to upstream as lora_path=."""
+    adapter = tmp_path / "lora"
+    overrides = GenerationRequest(
+        audio_path=tmp_path / "a.mp3", output_path=tmp_path / "out", lora_path=adapter
+    ).to_overrides()
+    assert f"lora_path={adapter}" in overrides
 
 
 def test_mania_overrides_include_keycount(tmp_path: Path) -> None:
