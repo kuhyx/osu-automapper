@@ -141,6 +141,28 @@ It is superseded by `blindtest-20260822T165618.osz`, which is leak-clean, gates
 clean on all six entries, and was reshuffled so its A-F assignment does not
 carry over from the pack whose answer leaked.
 
+### First scored result (2026-08-22)
+
+The first leak-clean pack was played: six MEGALOVANIA difficulties on identical
+audio, three generated and three human, interleaved by star rating.
+
+**5 of 6 correct.** With n=6, P(>=5 correct | pure guessing) = 7/64 = **0.11**,
+so this is *suggestive but not conclusive* -- it does not clear a 0.05 bar. The
+one miss was `A`, a human map, called AI.
+
+The interesting part is not the score. kuhy reported that while playing `B`
+(the first generated map) they realised `A` had been human -- but `A`'s answer
+was already locked in, because the harness offered all six prompts from the
+start. The first map is judged with nothing to compare it against, so it is
+systematically the weakest answer in the set. `play_blindtest.sh` now waits for
+confirmation that every map has been played and allows any answer to be revised
+before scoring, which turns that failure mode into a recoverable one.
+
+So the honest reading is: **one pack, n=6, 5/6, p=0.11, with a known order
+effect against the first map.** Both facts argue for the same next step -- more
+packs on other songs, which is cheap now that ~400 lazer maps are joined to
+audio. A second pack must use a fresh `--seed`: seed 1's key has been seen.
+
 ### Where anonymisation stops
 
 Scrub two categories and nothing else: **tool provenance** (editor state,

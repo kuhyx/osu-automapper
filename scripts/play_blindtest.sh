@@ -58,25 +58,81 @@ verify_no_leaks() {
     fi
 }
 
-ask_all() {
+
+# One question per map, in words rather than an argument format to fill in.
+ask_one() {
+    local label="$1" answer
+    while true; do
+        read -r -p "  $label - human or ai?  [h/a] " answer || true
+        case "${answer,,}" in
+            h|human) verdict[$label]="human"; return ;;
+            a|ai)    verdict[$label]="ai";    return ;;
+            *) echo "        type h for human or a for ai" ;;
+        esac
+    done
+}
+
+ask_each() {
     echo
-    echo "Play all six (A-F), then answer here."
     echo "For each one: was it made by a HUMAN or by the AI?"
-    echo
-    local guesses=() answer verdict
     for label in A B C D E F; do
-        while true; do
-            read -r -p "  $label - human or ai?  [h/a] " answer || true
-            case "${answer,,}" in
-                h|human) verdict="human"; break ;;
-                a|ai)    verdict="ai";    break ;;
-                *) echo "        type h for human or a for ai" ;;
-            esac
+        ask_one "$label"
+    done
+}
+
+# Answers are only scored once they have all been seen together, so a later
+# map can still correct an earlier impression.
+review_and_revise() {
+    while true; do
+        echo
+        echo "Your answers:"
+        for label in A B C D E F; do
+            printf "  %s = %s\n" "$label" "${verdict[$label]}"
         done
-        guesses+=("$label=$verdict")
+        local change
+        read -r -p "Change any? [letter to change, or Enter to score] " change || true
+        [[ -z "$change" ]] && return
+        change="${change^^}"
+        if [[ "$change" =~ ^[A-F]$ ]]; then
+            ask_one "$change"
+        else
+            echo "  type a letter A-F, or press Enter to score"
+        fi
+    done
+}
+
+ask_all() {
+    # Nothing is asked until every map has been played. kuhy scored 5/6 on the
+    # first run and only recognised A as human once B gave them a reference
+    # point -- but A's answer was already locked in, because the prompts were
+    # available from the start. An early answer is a worse measurement than a
+    # slow one, so this waits, and then lets every answer be revised before any
+    # of them is scored.
+    echo
+    echo "Play all six difficulties (A-F) in lazer first."
+    echo "Answering before you have played them all makes the early ones"
+    echo "guesses -- there is nothing to compare them against yet."
+    echo
+    local ready
+    while true; do
+        read -r -p "Played all six? [y] " ready || true
+        case "${ready,,}" in
+            y|yes) break ;;
+            *) echo "  take your time -- press y when all six are played" ;;
+        esac
+    done
+
+    declare -A verdict
+    ask_each
+    review_and_revise
+
+    local guesses=()
+    for label in A B C D E F; do
+        guesses+=("$label=${verdict[$label]}")
     done
     echo
     "$REPO_DIR/run.sh" blindtest-score "$KEY" "${guesses[@]}"
+
 }
 
 main() {
