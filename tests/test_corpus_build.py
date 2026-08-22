@@ -163,3 +163,33 @@ def test_usability_mirrors_the_loader_s_own_filter() -> None:
     assert std.is_usable(gamemodes=(0,), statuses=(1, 2)) is True
     assert mania.is_usable(gamemodes=(0,), statuses=(1, 2)) is False
     assert std.is_usable(gamemodes=(0,), statuses=(4,)) is False
+
+
+def test_a_mapset_is_dated_from_its_real_osu_id() -> None:
+    # v32 trains an add_year_token, so a constant date would collapse the whole
+    # corpus onto one year token and mismatch inference (which defaults to 2023).
+    audio = AudioCandidate(path=Path("/audio"), duration=180.0)
+    old = build_sample("set:80", [_parsed()], audio, rater=lambda _: 4.0)
+    new = build_sample("set:2241525", [_parsed()], audio, rater=lambda _: 4.0)
+    assert old is not None
+    assert new is not None
+    assert old.to_json_payload()["beatmaps"][0]["submit_date"].startswith("2007")
+    assert new.to_json_payload()["beatmaps"][0]["submit_date"].startswith("2024")
+
+
+def test_a_mapset_without_an_id_keeps_the_fallback_date() -> None:
+    from osu_automapper.corpus.build import FALLBACK_DATE
+
+    audio = AudioCandidate(path=Path("/audio"), duration=180.0)
+    sample = build_sample("name:Artist::Title", [_parsed()], audio, rater=lambda _: 4.0)
+    assert sample is not None
+    assert sample.to_json_payload()["beatmaps"][0]["submit_date"] == FALLBACK_DATE
+
+
+def test_a_non_numeric_set_key_does_not_crash_dating() -> None:
+    from osu_automapper.corpus.build import FALLBACK_DATE
+
+    audio = AudioCandidate(path=Path("/audio"), duration=180.0)
+    sample = build_sample("set:notanumber", [_parsed()], audio, rater=lambda _: 4.0)
+    assert sample is not None
+    assert sample.to_json_payload()["beatmaps"][0]["submit_date"] == FALLBACK_DATE

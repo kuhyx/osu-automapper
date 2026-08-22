@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from osu_automapper.corpus.dates import submit_date_for_set_id
 from osu_automapper.corpus.extract import ParsedBeatmap, bpm_of
 from osu_automapper.corpus.model import BeatmapEntry, MapsetSample
 
@@ -21,7 +22,8 @@ from osu_automapper.corpus.model import BeatmapEntry, MapsetSample
 # 1 is "ranked", which is what `ranked_statuses: [1, 2]` accepts; anything else
 # would make every sample invisible to the loader's filter.
 ASSUMED_APPROVED = 1
-ASSUMED_DATE = "2020-01-01 00:00:00"
+# Used only when a map carries no usable BeatmapSetID to date it from.
+FALLBACK_DATE = "2020-01-01 00:00:00"
 
 
 @dataclass(frozen=True)
@@ -45,7 +47,7 @@ def _synthetic_id(*parts: str) -> int:
     return int(digest[:12], 16)
 
 
-def _entry(beatmap: ParsedBeatmap, set_id: int, stars: float) -> BeatmapEntry:
+def _entry(beatmap: ParsedBeatmap, set_id: int, stars: float, submitted: str) -> BeatmapEntry:
     """Convert a parsed map into a corpus entry."""
     fields = beatmap.fields
     creator = fields.get("Creator", "unknown")
@@ -69,8 +71,8 @@ def _entry(beatmap: ParsedBeatmap, set_id: int, stars: float) -> BeatmapEntry:
         content=beatmap.text,
         difficultyrating=stars,
         approved=ASSUMED_APPROVED,
-        approved_date=ASSUMED_DATE,
-        submit_date=ASSUMED_DATE,
+        approved_date=submitted,
+        submit_date=submitted,
         version=version,
         artist=artist,
         title=title,
@@ -90,6 +92,19 @@ def _entry(beatmap: ParsedBeatmap, set_id: int, stars: float) -> BeatmapEntry:
     )
 
 
+def _submitted_date(set_key: str) -> str:
+    """Date a mapset from its real osu! id when the group key carries one.
+
+    Groups keyed by artist+title have no id to date from, so they keep the
+    fallback; that is a small minority and better than inventing a year.
+    """
+    if set_key.startswith("set:"):
+        raw = set_key.removeprefix("set:")
+        if raw.isdigit():
+            return submit_date_for_set_id(int(raw))
+    return FALLBACK_DATE
+
+
 StarRater = Callable[[Path], float]
 
 
@@ -103,13 +118,14 @@ def build_sample(
     if not beatmaps:
         return None
     set_id = _synthetic_id(set_key)
+    submitted = _submitted_date(set_key)
     entries = []
     for beatmap in beatmaps:
         try:
             stars = rater(beatmap.path)
         except Exception:
             stars = 0.0
-        entries.append(_entry(beatmap, set_id, stars))
+        entries.append(_entry(beatmap, set_id, stars, submitted))
     return MapsetSample(
         key=set_key,
         audio_hash=audio.path.name,
