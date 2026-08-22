@@ -164,6 +164,38 @@ To actually change the model's style, train on a corpus it has *not* seen: a
 specific mapper's sets, or a personal library. That needs a webdataset-shaped
 corpus, which is real work, not a config change.
 
+## The 3000-step run, in full
+
+Completed cleanly (3000/3000, zero errors). Loss by 500-step bucket stayed
+between 0.730 and 0.758 throughout; first-500 → last-500 was −0.011 against
+±0.052 noise.
+
+Evaluated at seed 555, difficulty 5.0 (`scripts/eval_checkpoints.sh`):
+
+```
+label          objects  circles  sliders  stars  verdict
+base           973      679      293      4.91   pass
+checkpoint_10  808      513      291      4.84   pass
+checkpoint_11  848      447      401      4.52   pass
+checkpoint_12  848      447      401      4.52   pass
+```
+
+Two things to take from this:
+
+1. **The adapters do change style**, flat loss notwithstanding — checkpoint_11
+   pushes sliders from 30% of objects to 35%, and every map still passes.
+2. **The run converged before it finished.** checkpoint_11 and checkpoint_12
+   have byte-identical `adapter_model.safetensors`, so the last 250 steps were
+   wasted compute. Stop earlier on this corpus.
+
+Final test metrics: fuzzy timing 96.9%, volume 97.0%, other 97.7%, exact timing
+88.0%, hitsound 78.0%, position 49.7%. The low position number is expected —
+object placement comes from the diffusion model at inference, not this
+transformer.
+
+Note `checkpoint.local_total_limit: 3` prunes older checkpoints, so a completed
+run leaves only the last three. Raise it if you want early-vs-late comparisons.
+
 ## Before spending the hours
 
 Run the blind test on stock-checkpoint output first (see
