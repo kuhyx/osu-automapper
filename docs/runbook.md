@@ -159,7 +159,14 @@ A leak that merely rewards cheating is better than a "fix" that corrupts the
 maps under test. `PreviewTime` is normalised to a real timestamp rather than
 `-1`, because the gate rejects an unset preview.
 
-When adding a new source of maps, diff a human entry against a generated one
-**before** playing -- the gate does not catch leaks, only broken maps. Compare
-every `key:value` line above `[HitObjects]`, then gate all six entries to prove
-the normalisation did not break them.
+When adding a new source of maps, check the pack **before** playing -- the gate
+does not catch leaks, only broken maps:
+
+```bash
+python3 scripts/check_blindtest_leaks.py <pack>.osz <key>.json
+```
+
+It reports every header key whose values never overlap between the two groups,
+and exits 1 on anything not in its allow-list. Verified against both packs: 19
+leaks on the compromised 15:39 one, clean on its replacement. Then gate all six
+entries too, to prove the normalisation did not break them.
