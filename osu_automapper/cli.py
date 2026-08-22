@@ -20,6 +20,7 @@ from osu_automapper.commands import (
     run_blindtest_build,
     run_blindtest_score,
     run_generate,
+    run_repair,
 )
 from osu_automapper.osz import OszError, check_osz_importable
 from osu_automapper.parse import BeatmapParseError, parse_beatmap
@@ -78,6 +79,10 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--title", default=None, help="Song title (else 'Unknown Title').")
     gen.add_argument("--artist", default=None, help="Song artist.")
     gen.add_argument("--preview-time", type=int, default=None, help="Preview point in ms.")
+
+    repair = sub.add_parser("repair", help="Strip known model artifacts from a beatmap.")
+    repair.add_argument("path", type=Path, help="Path to the .osu file.")
+    repair.add_argument("--output", type=Path, default=None, help="Write here instead of in place.")
 
     build = sub.add_parser("blindtest", help="Pack real and generated maps anonymously.")
     build.add_argument("--real", type=Path, nargs="+", required=True)
@@ -147,6 +152,7 @@ def main(argv: Sequence[str] | None = None, provider: StarRatingProvider | None 
     dispatch = {
         "check-osz": run_check_osz,
         "generate": run_generate,
+        "repair": run_repair,
         "blindtest": run_blindtest_build,
         "blindtest-score": run_blindtest_score,
     }

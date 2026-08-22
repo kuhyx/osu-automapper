@@ -14,6 +14,7 @@ from osu_automapper.blindtest.harness import BlindTest, pack_blindtest
 from osu_automapper.config import Paths
 from osu_automapper.generate import GenerationError, GenerationRequest, generate
 from osu_automapper.parse import Mode
+from osu_automapper.repair import RepairError, repair_file
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -82,4 +83,24 @@ def run_blindtest_score(args: argparse.Namespace) -> int:
             mark = "OK " if guesses[entry.label] == entry.generated else "MISS"
             origin = "generated" if entry.generated else "human"
             print(f"  {mark} {entry.label}: {origin}  ({Path(entry.source).name})")
+    return EXIT_OK
+
+
+def run_repair(args: argparse.Namespace) -> int:
+    """Strip known model artifacts from a beatmap, returning an exit code."""
+    try:
+        result = repair_file(args.path, args.output)
+    except RepairError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
+    if not result.changed:
+        print("no repairable artifact found; file unchanged")
+        return EXIT_OK
+    destination = args.output or args.path
+    print(
+        f"removed {result.removed} object(s) stacked at t=0 "
+        f"(map really starts at {result.first_real_time}ms) -> {destination}"
+    )
+    print("re-run `check` to confirm the result now passes.")
     return EXIT_OK
