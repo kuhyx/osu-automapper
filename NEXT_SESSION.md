@@ -5,91 +5,114 @@ Paste everything below the line into a fresh session.
 ---
 
 Continue work on `~/osu-automapper` (public repo `kuhyx/osu-automapper`, clean
-and fully pushed as of 2026-08-22 17:00). Read `docs/finetuning.md` and
-`docs/gates.md` first — they hold the measured findings, and re-deriving them
-costs GPU hours.
+and fully pushed as of 2026-08-22 ~18:30, CI green). Read `docs/sweep.md`,
+`docs/corpus-options.md` and `docs/lazer-library.md` first — they hold measured
+findings, and several of them cost GPU hours or a wrong turn to establish.
 
-## What already works — do not rebuild any of it
+## Two things need a human, do these first
 
-- **Generation + gates.** `./run.sh generate|check|check-osz|repair|blindtest|blindtest-score`.
-  Verified on real output for osu!standard AND osu!mania. 137 tests, 100% branch
-  coverage, mypy --strict / ruff / shellcheck clean, CI green, pre-commit installed.
-- **Quality confirmed by a human**: kuhy played a generated map and reported it
-  "plays fine, on beat, everything seems working correctly". A 4.07★ map
-  (`out/std_4star_s7`) passes all 14 checks.
-- **LoRA fine-tuning runs end to end.** A 3000-step run completed cleanly
-  (zero errors). `configs/train/lora_kuhy.yaml` in the upstream clone, mirrored
-  at `docs/lora_kuhy.yaml` and gated by `scripts/check_training_config.py`.
-- **Upstream is a third-party sibling** at `~/Mapperatorinator` — never vendor,
-  modify or PR it. It is in `THIRD_PARTY_REPOS` in `~/utils/file_length/config.py`.
-- **Hard boundary: nothing is ever uploaded to osu!.** The Ranking Criteria
-  forbids generative tooling outright, so these maps cannot be ranked.
-  `tests/test_no_upload_boundary.py` fails the build on any submit endpoint,
-  credential or HTTP-client import. The passing state is named
-  `technically_rankable`, never `rankable`. See `docs/ranking-criteria.md`.
+1. **Play the 6-map blind test.** It is built and both known leaks are fixed:
+   `~/osu-automapper_data/blindtest/blindtest-20260822T153940.osz`
+   Import into lazer, play A–F **without reading the key**, then:
+   ```bash
+   ./run.sh blindtest-score ~/osu-automapper_data/blindtest/20260822T153940.json \
+       A=ai B=human C=ai D=human E=ai F=human   # <- your actual guesses
+   ```
+   All six are MEGALOVANIA on identical audio, gate-clean, with interleaved star
+   ratings (3.77/3.81, 4.48/4.63, 4.93/5.47) so difficulty is not the tell.
+   This is still the only real answer to "are these maps any good?".
 
-## Measured facts — trust these instead of re-measuring
+2. **Log in to Hugging Face** — the `hf` CLI is NOT on PATH; it lives in the
+   upstream venv:
+   ```bash
+   ~/Mapperatorinator/.venv/bin/hf auth login
+   ```
+   kuhy chose a **private** HF dataset repo for the corpus. Everything up to the
+   upload is done locally and needs no token; only the upload is blocked.
 
-- **Inference is deterministic.** Two no-LoRA runs at the same seed produce
-  byte-identical hit objects. So any same-seed difference is real signal, and an
-  unexplained one must be explained rather than dismissed as variance.
-- **Snap checking needs a divisor FAMILY** `(1,2,3,4,5,6,7,8,9,12,16)`. Over 300
-  ranked maps / 129,097 objects: powers of two alone falsely flag 11 maps
-  (triplet 1/12), lazer's 1/5,1/7,1/9 five more. p99 error ~1.4 ms. The ~2% that
-  still fail are REAL unsnaps ranked maps ship — never add a % tolerance.
-- **LoRA training on `project-riz/osu-beatmaps` plateaus immediately.** Loss
-  0.752 → 0.742 across 3000 steps (delta −0.011 vs noise ±0.052) because that is
-  the corpus v32 was already trained on. Do NOT respond by raising `base_lr` or
-  adding steps — it is a data problem, not a hyperparameter one.
-- **The adapters still change style despite flat loss** (seed 555, difficulty 5.0):
+## What is new since the last handoff
 
-  | | objects | circles | sliders | stars |
-  |---|---|---|---|---|
-  | base | 973 | 679 | 293 | 4.91 |
-  | checkpoint_10 | 808 | 513 | 291 | 4.84 |
-  | checkpoint_11 | 848 | 447 | 401 | 4.52 |
-  | checkpoint_12 | 848 | 447 | 401 | 4.52 |
+- **`./run.sh sweep`** — resumable reliability sweep over
+  (song × difficulty × gamemode × seed × adapter). Gates each cell **twice**:
+  raw model output and post-`repair`. Per-cell JSON in
+  `~/osu-automapper_data/sweep/`; existing cells are skipped on restart.
+- **`./run.sh corpus`** — builds webdataset `.tar` shards from the lazer library
+  in the exact schema upstream's `web` loader expects. Verified end to end
+  against upstream's own code, not assumed.
+- **Blind-test anonymisation now strips two leaks** that made the first pack
+  worthless (see below).
+- 252 tests, 100% branch coverage, mypy --strict / ruff / pre-commit clean, no
+  suppressions.
 
-  All pass the gate. Re-run with `./scripts/eval_checkpoints.sh`.
-- **The run converged before it ended.** checkpoint_11 and checkpoint_12 have
-  **byte-identical adapter weights** (same md5 on `adapter_model.safetensors`),
-  so the final 250 steps changed nothing. Together with the flat loss this means
-  a future run on this corpus should stop early — there is nothing to gain.
-- **Final test metrics**: fuzzy timing 96.9%, volume 97.0%, other 97.7%, exact
-  timing 88.0%, hitsound 78.0%, position 49.7% (positions come from the separate
-  diffusion model at inference, so the low number is expected).
-- **Known model defect**: at low target difficulty the model sometimes emits a
-  cluster of objects stacked at `t=0` (seeds 4004/7/21 gave 16/0/1). `./run.sh
-  repair` strips it; it leaves clean and human maps byte-identical.
+## Measured facts — trust these instead of re-deriving them
 
-## Pick up here (roughly in value order)
+- **A `gamemode=0` LoRA is silently ignored in mania.** Loading checkpoint_11
+  with `--gamemode 3` produced hit objects **byte-identical to the base model**
+  at seeds 1/2/3. Inference is deterministic, so that is proof, not coincidence.
+  Never report mania+LoRA numbers as a LoRA result; a mania adapter must be
+  trained with mania in `ckpt_subfolders`. (Item 4 is answered — done.)
+- **The song dominates the failure rate, not the difficulty.** Two songs in:
+  `dschinghis_khan_moskau` failed **22/22** cells while `celldweller_weaponized`
+  passed 23/30. Moskau has 43 uninherited timing points with drifting BPM, and
+  the model lands 5–10 ms off-grid right after a timing-point change (hand-checked
+  against the correct active red line: 9.00/5.00/10.00 ms vs a 2 ms tolerance).
+  These are real unsnapped objects. **Do not loosen `SNAP_TOLERANCE_MS`.**
+- **Two invisible blind-test leaks, both fixed, both worth re-checking whenever a
+  new source of maps is added:** `[Events]` (human maps ship backgrounds, breaks
+  and storyboards; generated maps ship none) and **kiai** (`effects` bit 0 —
+  human maps had 11 kiai rows, generated maps 0; it pulses the playfield). The
+  gate catches broken maps, not leaks — diff a human entry against a generated
+  one before playing.
+- **The `web` route genuinely requires an upload.** `load_dataset` accepts local
+  paths, but `list_repo_files` runs first, unconditionally, and always hits the
+  Hub API. A hand-built local cache with `refs/main` still raised
+  `OfflineModeIsEnabled`. There is no `local_files_only` anywhere upstream, and
+  upstream must not be modified. A **private** repo is fine.
+- **`ors` is the only local-directory loader and it cannot fine-tune v32**: it
+  hard-raises on the `add_year_token` v32 sets, has no special-token path, and
+  takes a scalar `context_types["out"]` where v32 uses a list.
+- **Corpus schema (measured off a real shard, not guessed):** webdataset `.tar`
+  of `<key>.json` + `<key>.opus` pairs, one sample per *mapset*. `beatmap_id`,
+  `beatmapset_id`, `mode`, `creator_id`, `content` are read with `[]` and crash
+  training if missing; `approved`, `difficultyrating`, `approved_date`,
+  `submit_date` drive the filter and silently exclude instead.
+- **Every mapset is dated from its osu! set id**, via an anchor table measured
+  from 2,979 real id/date pairs. A constant date would train one year token while
+  inference asks for `--year 2023` — the same silent-no-op shape as the mania bug.
+  On this library it yields 16 distinct years, 2007–2025.
+- **Two things the corpus asserts rather than knows** (do not read them back as
+  real osu! metadata): `approved` is set to 1 for everything, and
+  `beatmap_id`/`creator_id` are content hashes.
 
-1. **Play the blind test.** Already built and waiting:
-   `~/osu-automapper_data/blindtest/blindtest-20260822T111919.osz` — 3 maps
-   labelled A/B/C, anonymity verified (Version/Creator/Tags stripped). Import it
-   into lazer, play without reading the key, then
-   `./run.sh blindtest-score ~/osu-automapper_data/blindtest/20260822T111919.json A=ai B=human C=ai`.
-   This is the only real answer to "are these maps actually good?" and it needs
-   kuhy at the keyboard. Consider building a bigger pack first (6 maps).
-2. **Train a LoRA on a corpus v32 has NOT seen** — the plateau above says this is
-   the only way to get a real style change. kuhy's own lazer library is the
-   obvious candidate: ~2786 std maps already local at `~/.local/share/osu/files`
-   (see `reference-lazer-library-access` memory — content-addressed blobs, no
-   Realm reader needed, join audio ID3 tags to `.osu [Metadata]`). Needs a
-   webdataset-shaped corpus; that is real work, so **agree scope before starting**.
-   Do NOT use `dataset_type: "mmrs"` — it needs an osu! OAuth token this project
-   deliberately does not hold.
-3. **A difficulty/gamemode reliability sweep**: generate 3★–7★ across std and
-   mania, several seeds each, gate everything, and report where the model is
-   reliable and where it breaks (e.g. how often the t=0 defect fires by
-   difficulty). Cheap, fully automatable, and turns anecdotes into a table.
-4. **Test a LoRA with mania** — every adapter so far is `gamemode=0` only
-   (`ckpt_subfolders: ["gamemode=0"]`), and no mania+LoRA run has been done.
+## Pick up here
+
+1. **Finish and publish the sweep table.** The sweep was still running at ~65/180
+   cells when the session ended; it is resumable, so just re-run it:
+   ```bash
+   ./run.sh sweep            # skips every cell already on disk
+   ```
+   Then fold the final table from `~/osu-automapper_data/sweep/REPORT.md` into
+   `docs/sweep.md` and commit it — the data root is gitignored, so the headline
+   result must be copied into the repo to survive.
+2. **Finish the corpus and upload it** (needs step 2 above):
+   ```bash
+   ./run.sh corpus --shard-size 64      # ~562 usable mapsets, writes + verifies
+   ```
+   Then upload `~/osu-automapper_data/corpus/compressed/` to a **private** HF
+   dataset repo and point a training config at it. Budget for the blockers in the
+   `reference-mapperatorinator-training` memory (torchcodec ABI, flash-attn,
+   wandb-only checkpoints) — training has not been attempted on this corpus yet.
+3. **Consider a bigger blind test** once the first is scored: the lazer library
+   has ~400 maps joined to audio, so packs on other songs are cheap now.
+4. **A mania LoRA**, if mania is wanted — see the byte-identical finding above.
 
 ## Housekeeping
 
-- `~/osu-automapper_data/` holds ~50 GB: a partial 49 GB corpus download that is
-  NOT needed (training streams) and can be deleted, plus checkpoints and test
-  output. `local_total_limit: 3` already pruned all but checkpoints 10–12.
-- Bulk-downloading that corpus saturated the uplink hard enough to break DNS for
-  `git push` and `huggingface.co`. Stream instead.
+- The 49 GB unused corpus download is **deleted** (authorised); 2 TB free.
+- `~/osu-automapper_data/` holds sweep results, shards, checkpoints and blind
+  tests. `songs/` now has 6 songs spanning 100–240 BPM, five pulled from the
+  lazer library; `docs/sweep.md` has the table with BPMs.
+- Upstream `~/Mapperatorinator` is a third-party sibling: never vendor, modify or
+  PR it.
+- **Nothing is ever uploaded to osu!** — `tests/test_no_upload_boundary.py`
+  enforces it. The passing state is `technically_rankable`, never `rankable`.
