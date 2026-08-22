@@ -77,11 +77,27 @@ evaluate_one() {
     echo "  $label: objs/circles/sliders $counts | ${stars:-?}* | $verdict"
 }
 
+# inference.py writes into logs/<date>/<time>/ too, so "newest directory" picks
+# an inference run -- and this script's own generate calls create them. Select on
+# evidence of training instead: a train.log AND at least one checkpoint.
+find_training_run() {
+    local dir
+    while IFS= read -r dir; do
+        if [[ -f "$dir/train.log" ]] && compgen -G "$dir/checkpoints/*" >/dev/null; then
+            printf '%s\n' "$dir"
+            return 0
+        fi
+    done < <(find "$HOME/Mapperatorinator/logs" -mindepth 2 -maxdepth 2 -type d \
+        -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+    return 1
+}
+
 main() {
     local run_dir
-    run_dir="$(find "$HOME/Mapperatorinator/logs" -mindepth 2 -maxdepth 2 -type d \
-        -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
-    [[ -n "$run_dir" ]] || { echo "Error: no training run found" >&2; exit 1; }
+    run_dir="$(find_training_run)" || {
+        echo "Error: no training run with checkpoints found under ~/Mapperatorinator/logs" >&2
+        exit 1
+    }
 
     mkdir -p "$(dirname "$RESULTS")"
     printf 'label\tobjects\tcircles\tsliders\tstars\tverdict\n' > "$RESULTS"
