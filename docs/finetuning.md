@@ -71,7 +71,9 @@ and still yield a usable adapter.
   and touches no network. Export `WANDB_MODE=offline WANDB_SILENT=true` too.
 
   The crash lands *after* the adapter is written, so a run killed this way still
-  leaves a usable LoRA on disk — which is how the step-250 adapter survived.
+  leaves a usable LoRA on disk — which is how the first step-250 adapter
+  survived to be tested. **Fix confirmed:** with offline wandb the run saved
+  checkpoint_0 at step 250 and continued past it with zero tracker errors.
 
 A style LoRA needs **≥10 style-consistent maps** to be worth training; fewer and
 it memorises rather than generalises. Each checkpoint writes a PEFT adapter to `checkpoints/checkpoint_N/lora/`
