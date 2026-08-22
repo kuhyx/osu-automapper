@@ -86,18 +86,33 @@ what inference consumes:
 
 Verified at step 250 with seed (555) and difficulty (5.0) held constant:
 
-| | base | LoRA |
-|---|---|---|
-| objects | 973 | 928 |
-| circles | 679 | 616 |
-| sliders | 293 | 312 |
-| spinners | 1 | 0 |
-| shared timestamps | — | 80% |
+| | base | LoRA (run A) | LoRA (run B) |
+|---|---|---|---|
+| objects | 973 | 928 | 922 |
+| circles | 679 | 616 | 612 |
+| sliders | 293 | 312 | 310 |
+| stars | 4.91 | 4.68 | 4.71 |
 
-The LoRA map still passed all 14 checks at 4.68 stars. Object *count* alone is
-weak evidence; the shifted slider-to-circle ratio is what shows the adapter is
-changing style rather than just reshuffling. Fixed-seed comparison like this is
-the cheapest way to prove an adapter is loaded rather than silently ignored.
+Both LoRA maps passed all 14 checks. Runs A and B are **two different
+adapters** — both trained to step 250, but in separate runs — which is why they
+differ from each other; see the determinism note below.
+
+Object *count* alone is weak evidence; the shifted slider-to-circle ratio
+(30.1% → ~33.5%) is what shows the adapter is changing style rather than just
+reshuffling.
+
+### Inference is deterministic, so a fixed-seed diff is real signal
+
+Two independent no-LoRA runs at seed 555 produced **byte-identical hit objects**
+(same md5, 973 objects both times). The base-vs-base noise floor is therefore
+zero, and any difference against a LoRA run is attributable to the adapter
+rather than sampling.
+
+This makes same-seed comparison the cheapest way to prove an adapter is loaded
+rather than silently ignored — but it also means an unexplained difference must
+be explained, not waved off as variance. The A/B gap above traced to two
+distinct adapter directories, visible in each map's `Tags:` line, which records
+the `lora=` path used.
 
 ## Evaluating the checkpoints
 
@@ -130,6 +145,24 @@ take roughly twice as long (~90 s vs ~40 s) while sharing the GPU.
 
 Any real training run is **off-hours only** and never launched while the machine
 is in use — a multi-hour job that saturates the GPU makes the desktop unusable.
+
+## The loss plateaus almost immediately — and that is expected
+
+Measured over the first 510 steps: loss fell 0.812 → ~0.747 within about 100
+steps and then went flat. Comparing the first and second halves of the samples,
+the difference (+0.009) is far *smaller* than the noise between logged batches
+(σ ≈ 0.057) — a plateau, not a trend. A single low sample (0.618 appears in the
+range) is noise, not progress; always compare bucketed means.
+
+The cause is structural, not a hyperparameter problem: **`project-riz/osu-beatmaps`
+is the corpus upstream already trained v32 on**, over roughly 5700 GPU-hours.
+Fine-tuning a model on its own training distribution has little left to teach it.
+Do not respond by raising `base_lr` or adding steps — that is tuning knobs
+against a data problem.
+
+To actually change the model's style, train on a corpus it has *not* seen: a
+specific mapper's sets, or a personal library. That needs a webdataset-shaped
+corpus, which is real work, not a config change.
 
 ## Before spending the hours
 
