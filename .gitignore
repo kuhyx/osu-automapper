@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+# Generated maps, audio and checkpoints never enter the repo.
+*.osz
+*.mp3
+*.ogg
