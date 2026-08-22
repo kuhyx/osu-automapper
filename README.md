@@ -16,9 +16,12 @@ an exit code instead of an opinion.
 ## What it does
 
 - **Generates** osu!standard and osu!mania maps from any audio file, with the
-  generation config recorded so a run can be repeated exactly.
+  generation config recorded so a run can be repeated exactly. Optionally
+  through a fine-tuned LoRA adapter (`--lora-path`).
 - **Gates** the result: 9 mode-independent checks plus a per-gamemode suite,
   a pinned star-rating tolerance, and a `0` / `1` / `2` exit-code contract.
+- **Repairs** a known model artifact (a cluster of objects stacked at `t=0`)
+  as a separate opt-in command, so gating never silently edits what it judges.
 - **Blind-tests** generated maps against human ones behind anonymous labels,
   because quality is a human judgement and shouldn't pretend to be CI.
 
@@ -44,6 +47,7 @@ tool for a local question.
 | [`runbook.md`](docs/runbook.md) | install, generate, check — and the traps |
 | [`gates.md`](docs/gates.md) | every check, and the measurements behind the thresholds |
 | [`landscape.md`](docs/landscape.md) | what already exists, and why Mapperatorinator |
+| [`finetuning.md`](docs/finetuning.md) | LoRA training, and the four traps that block it |
 | [`ranking-criteria.md`](docs/ranking-criteria.md) | the AI policy, sourced |
 
 ## Architecture
