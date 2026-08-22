@@ -101,6 +101,43 @@ def _strip_events(text: str) -> str:
     return f"{head}[Events]\n//Background and Video events\n//Break Periods{remainder}"
 
 
+def _clear_kiai(text: str) -> str:
+    """Turn off kiai on every timing point.
+
+    A ``[TimingPoints]`` row is
+    ``time,beatLength,meter,sampleSet,sampleIndex,volume,uninherited,effects``
+    and bit 0 of ``effects`` enables kiai, which makes the playfield pulse and
+    the background flash. Ranked maps kiai their chorus; generated maps never do
+    -- measured on a real pack, every human entry had 11 kiai rows and every
+    generated entry had none, which is visible within seconds of starting.
+
+    Only that one bit is touched. Inherited timing points carry slider velocity
+    and volume, so dropping rows would change how the human maps actually play
+    and invalidate the very comparison being run.
+    """
+    head, marker, tail = text.partition("[TimingPoints]")
+    if not marker:
+        return text
+    body, next_marker, rest = tail.partition("\n[")
+
+    lines = []
+    for line in body.splitlines():
+        fields = line.split(",")
+        if len(fields) >= 8:
+            try:
+                effects = int(fields[7])
+            except ValueError:
+                lines.append(line)
+                continue
+            fields[7] = str(effects & ~1)
+            lines.append(",".join(fields))
+        else:
+            lines.append(line)
+
+    remainder = f"\n[{rest}" if next_marker else ""
+    return head + "[TimingPoints]" + "\n".join(lines) + remainder
+
+
 def _anonymise(text: str, label: str) -> str:
     """Rewrite a beatmap's identifying metadata to a bare label.
 
@@ -109,7 +146,7 @@ def _anonymise(text: str, label: str) -> str:
     """
     replacements = {"Version": label, "Creator": "blindtest", "Tags": ""}
     lines = []
-    for line in _strip_events(text).splitlines():
+    for line in _clear_kiai(_strip_events(text)).splitlines():
         key, sep, _ = line.partition(":")
         if sep and key in replacements:
             lines.append(f"{key}:{replacements[key]}")

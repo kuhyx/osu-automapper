@@ -149,3 +149,68 @@ def test_events_at_the_end_of_a_file_are_still_stripped() -> None:
 
     text = 'osu file format v14\n\n[Events]\n0,0,"bg.jpg",0,0\n'
     assert "bg.jpg" not in _strip_events(text)
+
+
+KIAI_MAP = """osu file format v14
+
+[TimingPoints]
+0,500,4,2,0,60,1,0
+1000,-100,4,2,0,60,0,1
+2000,-100,4,2,0,80,0,5
+3000,malformed
+3500,-100,4,2,0,60,0,notanumber
+4000,-100,4,2,0,60,0,4
+
+[HitObjects]
+256,192,0,1,0,0:0:0:0:
+"""
+
+
+def _effects(text: str) -> list[str]:
+    body = text.partition("[TimingPoints]")[2].partition("\n[")[0]
+    return [line.split(",")[7] for line in body.splitlines() if len(line.split(",")) >= 8]
+
+
+def test_kiai_is_cleared_because_it_flashes_the_playfield() -> None:
+    from osu_automapper.blindtest.harness import _clear_kiai
+
+    # Human maps kiai their chorus and generated maps never do, so the flag
+    # alone would answer the question the test is asking.
+    result = _clear_kiai(KIAI_MAP)
+    numeric = [e for e in _effects(result) if e.lstrip("-").isdigit()]
+    assert numeric
+    assert all(int(e) % 2 == 0 for e in numeric)
+
+
+def test_clearing_kiai_preserves_every_other_effect_bit() -> None:
+    from osu_automapper.blindtest.harness import _clear_kiai
+
+    # effects=5 is kiai (1) + omit-first-barline (4): only the kiai bit may go.
+    assert "4" in _effects(_clear_kiai(KIAI_MAP))
+
+
+def test_clearing_kiai_preserves_slider_velocity_and_volume() -> None:
+    from osu_automapper.blindtest.harness import _clear_kiai
+
+    result = _clear_kiai(KIAI_MAP)
+    assert "1000,-100,4,2,0,60,0,0" in result
+    assert "2000,-100,4,2,0,80,0,4" in result
+    assert "3000,malformed" in result
+    # Eight fields but a non-numeric effects value: kept verbatim rather than
+    # crashing the pack build on one odd row.
+    assert "3500,-100,4,2,0,60,0,notanumber" in result
+    assert "256,192,0,1,0,0:0:0:0:" in result
+
+
+def test_a_map_without_timing_points_is_left_alone() -> None:
+    from osu_automapper.blindtest.harness import _clear_kiai
+
+    text = "osu file format v14\n\n[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    assert _clear_kiai(text) == text
+
+
+def test_timing_points_at_the_end_of_a_file_are_still_cleared() -> None:
+    from osu_automapper.blindtest.harness import _clear_kiai
+
+    text = "osu file format v14\n\n[TimingPoints]\n0,500,4,2,0,60,1,1\n"
+    assert _clear_kiai(text).rstrip().endswith(",0")
