@@ -99,6 +99,25 @@ weak evidence; the shifted slider-to-circle ratio is what shows the adapter is
 changing style rather than just reshuffling. Fixed-seed comparison like this is
 the cheapest way to prove an adapter is loaded rather than silently ignored.
 
+## Evaluating the checkpoints
+
+A run leaves a pile of adapters nobody has looked at. `scripts/eval_checkpoints.sh`
+turns them into numbers: it generates one map per checkpoint plus a no-LoRA
+baseline, all at the same seed and difficulty, gates each, and writes
+`~/osu-automapper_data/lora/results.tsv`.
+
+```bash
+cd ~/osu-automapper && ./scripts/eval_checkpoints.sh
+SEED=99 DIFFICULTY=4.0 ./scripts/eval_checkpoints.sh   # or vary the probe
+```
+
+It reports circles and sliders separately because **object count alone
+understates the effect** — at step 250 the count moved 973 → 928 while the
+slider/circle ratio moved 679/293 → 616/312.
+
+Safe to run while training continues: both fit in 24 GB. Expect inference to
+take roughly twice as long (~90 s vs ~40 s) while sharing the GPU.
+
 ## Scheduling
 
 Any real training run is **off-hours only** and never launched while the machine
