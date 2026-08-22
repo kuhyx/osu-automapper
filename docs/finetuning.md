@@ -112,8 +112,16 @@ SEED=99 DIFFICULTY=4.0 ./scripts/eval_checkpoints.sh   # or vary the probe
 ```
 
 It reports circles and sliders separately because **object count alone
-understates the effect** — at step 250 the count moved 973 → 928 while the
-slider/circle ratio moved 679/293 → 616/312.
+understates the effect**. First run, seed 555, difficulty 5.0:
+
+```
+label         objects  circles  sliders  stars  verdict
+base          973      679      293      4.91   pass
+checkpoint_0  922      612      310      4.71   pass
+```
+
+Both pass the gate; the adapter is trading circles for sliders (30.1% → 33.6%
+sliders) rather than simply producing fewer objects.
 
 Safe to run while training continues: both fit in 24 GB. Expect inference to
 take roughly twice as long (~90 s vs ~40 s) while sharing the GPU.
