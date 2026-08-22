@@ -104,3 +104,61 @@ Three real options, in rough order of cost:
 
 This is a scope decision, not a technical one — it should be made deliberately
 rather than discovered halfway through building shards.
+
+## Building the shards
+
+`./run.sh corpus` implements option 1's local half: it scans the blob store,
+groups difficulties into mapsets, matches each set to its audio, writes
+webdataset `.tar` shards and verifies every one of them.
+
+```bash
+./run.sh corpus --dry-run              # what would be built, writes nothing
+./run.sh corpus --shard-size 64        # write into <data>/corpus/compressed/
+./run.sh corpus --gamemode 3           # mania instead of standard
+```
+
+Measured on this library: 2,864 standard beatmaps and 2,888 audio blobs across
+563 mapsets. A manifest lands beside the shards recording what was built and any
+verification problems; a failed verification fails the command rather than being
+reported as success.
+
+**Nothing in this command touches the network.** Uploading is a separate,
+deliberate step.
+
+### The schema, and how it was confirmed
+
+Each sample is one mapset: a `<key>.json` / `<key>.opus` pair inside the tar.
+
+```json
+{"audio_hash": "...", "audio_length": 123.4,
+ "beatmaps": [{"beatmap_id": 1, "beatmapset_id": 2, "mode": 0, "creator_id": 3,
+               "approved": 1, "difficultyrating": 4.2, "content": "osu file format v14..."}]}
+```
+
+`beatmap_id`, `beatmapset_id`, `mode`, `creator_id` and `content` are read with
+`[]` in `web_dataset.py`, so a missing one crashes training rather than skipping
+a sample; `verify_shard` checks all five. `approved`, `difficultyrating`,
+`approved_date` and `submit_date` drive `filter_web_beatmaps`, whose absence
+silently excludes the beatmap instead.
+
+This was verified against a real 25.8 MB shard, not assumed:
+
+- `datasets` decodes the audio to 16 kHz mono
+- upstream's own `filter_web_beatmaps` keeps every beatmap under
+  `gamemodes=[0], ranked_statuses=[1,2]`
+- `slider.Beatmap.parse` -- the call the training loop makes -- parses all 68
+  difficulties with zero failures
+
+### Two honest caveats about the metadata
+
+lazer keeps no osu! web metadata, so two fields are *asserted* rather than known:
+
+- **`approved` is set to 1 ("ranked") for everything.** The local library holds
+  whatever was downloaded, ranked or not. Setting anything else would make every
+  sample invisible to `ranked_statuses: [1, 2]`.
+- **`beatmap_id` / `creator_id` are content hashes**, since lazer does not retain
+  ids for every map. The loader only uses them as identity, and hashing is
+  stable across rebuilds.
+
+Neither is load-bearing for training, but neither should be reported as real
+osu! metadata.
