@@ -46,8 +46,14 @@ minutes — far too small to be worth the setup. The shipped config is therefore
 `batch_size: 24, total_steps: 3000`, which sits at ~8.5 GB and keeps the GPU
 pinned at 100%.
 
-The first step of a run is slow (~13 s) while the streaming dataloader fills;
-do not read that as the steady-state rate.
+The first step of a run is slow (~13-15 s) while the streaming dataloader fills;
+do not read that as the steady-state rate. Nor is the batch-8 figure a guide:
+**batch 24 runs at ~3.0 s/step**, not 1.1, so 3000 steps is ~150 minutes. Time
+the run by sampling two step numbers a minute apart rather than trusting
+`train/seconds_per_step` from the first log line.
+
+Checkpoints every 250 steps (~12 min) mean the run can be stopped at any point
+and still yield a usable adapter.
 
 ### Two overrides that config needs, and why
 
