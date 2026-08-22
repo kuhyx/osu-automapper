@@ -1,0 +1,75 @@
+# LoRA fine-tune on the streamed ranked corpus (project-riz/osu-beatmaps).
+#
+# Differs from lora_v32.yaml in one way that matters: that config expects a
+# LOCAL mmrs dataset built by the Mapperator .NET console app, which needs an
+# osu! OAuth token. This one uses the `web` dataset the base v32 config already
+# points at, streamed from Hugging Face -- no token, no 299GB download.
+defaults:
+  - v32
+  - _self_
+
+# v32.yaml sets flash_attention_2, but flash-attn is absent from requirements.txt
+# (upstream only builds it inside their Dockerfile). SDPA is the working fallback.
+attn_implementation: 'sdpa'
+compile: false          # torch.compile adds minutes of warmup for a short run
+mixed_precision: 'bf16'
+enable_lora: true
+
+pretrained_path: "OliBomby/Mapperatorinator-v32"
+pretrained_gamemode: 0
+
+data:
+  dataset_type: "web"
+  train_dataset_path: "project-riz/osu-beatmaps"
+  test_dataset_path: "project-riz/osu-beatmaps"
+  dataset_subset: "compressed"   # 74 shards of 64kbps opus; `original` is far larger
+  train_dataset_start: 0
+  train_dataset_end: 72
+  test_dataset_start: 72
+  test_dataset_end: 74
+  train_dataset_streaming: true
+  test_dataset_streaming: true
+  gamemodes: [0]
+  ranked_statuses: [1, 2]        # ranked + approved only
+  min_year: null
+  max_year: null
+
+dataloader:
+  num_workers: 4                 # streaming is network-bound; more workers prefetch
+  drop_last: false
+  balancer_buffer_size: 0
+
+optim:
+  name: muon
+  base_lr: 0.0004
+  base_lr_2: 0.0001
+  batch_size: 8                  # fits comfortably in 24GB beside the base model
+  grad_acc: 8
+  total_steps: 400
+  warmup_steps: 20
+  sustain_steps: 0
+  weight_decay: 0.01
+  lr_scheduler: cosine
+  final_cosine: 0
+
+lora:
+  r: 64
+  lora_alpha: 128
+  target_modules: ['Wq', 'Wkv', 'Wqkv', 'Wo']
+  lora_dropout: 0.05
+  bias: "none"
+  init_lora_weights: "pissa"
+
+lora_metadata:
+  ckpt_subfolders: ["gamemode=0"]
+
+# default checkpoint.every_steps is 5000, which would never fire in a 400-step
+# run and leave nothing on disk.
+checkpoint:
+  every_steps: 100
+  local_total_limit: 3
+
+logging:
+  log_with: 'tensorboard'        # no W&B account needed
+  mode: offline
+  every_steps: 10

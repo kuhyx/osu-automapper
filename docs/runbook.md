@@ -28,6 +28,17 @@ what keeps the test suite at 100% branch coverage and CI free of CUDA.
    pulls `torchcodec`, which will happily drag in a CPU-only torch. The probe at
    the end of `install.sh` re-checks `torch.cuda.is_available()` *after* the
    requirements install for exactly this reason.
+3. **`torchcodec==0.10.0` (pinned upstream) is ABI-broken against torch 2.13**
+   and fails with `undefined symbol: _ZN3c1013MessageLoggerC1EPKciib`. It only
+   bites the *dataset* path (training), not inference, which uses `torchaudio`.
+   Fix: `torchcodec==0.16.0` from the same cu130 index — it also ships a
+   `core9` build for Arch's FFmpeg 9, where 0.10.0 topped out at FFmpeg 8.
+   Installing `ffmpeg4.4` is **not** needed and does not help.
+
+   Diagnosing this: a bare `ctypes.CDLL()` on `libtorchcodec_core*.so` reports
+   a misleading `libc10_cuda.so: cannot open shared object file`, because only
+   `import torch` puts libtorch on the loader path. Always probe with
+   `import torch` first, then `import torchcodec`.
 
 ## Generate
 

@@ -55,6 +55,13 @@ install_upstream_venv() {
     # upstream's requirements.txt (it only ships in their Dockerfile).
     VIRTUAL_ENV="$UPSTREAM_DIR/.venv" uv pip install --quiet torchaudio --index-url "$TORCH_INDEX"
     VIRTUAL_ENV="$UPSTREAM_DIR/.venv" uv pip install --quiet -r "$UPSTREAM_DIR/requirements.txt"
+    # requirements.txt pins torchcodec==0.10.0, which is ABI-broken against
+    # current torch (undefined symbol c10::MessageLogger) and has no build for
+    # FFmpeg 9 as shipped by Arch. Only the dataset/training path uses it, so
+    # inference hides the problem until you try to train. Upgrade last, so it
+    # wins over the pin.
+    VIRTUAL_ENV="$UPSTREAM_DIR/.venv" uv pip install --quiet \
+        "torchcodec>=0.16.0" --index-url "$TORCH_INDEX"
 }
 
 install_our_venv() {
@@ -73,11 +80,13 @@ prepare_data_root() {
 probe_environment() {
     echo "--- environment probe ---"
     HF_HOME="$DATA_ROOT/hf" "$UPSTREAM_DIR/.venv/bin/python" - <<'PY'
-import torch
+import torch  # must precede torchcodec: it puts libtorch on the loader path
 import torchaudio
+import torchcodec
 
 print(f"torch      {torch.__version__}")
 print(f"torchaudio {torchaudio.__version__}")
+print(f"torchcodec {torchcodec.__version__}")
 print(f"cuda       {torch.cuda.is_available()}")
 if torch.cuda.is_available():
     print(f"device     {torch.cuda.get_device_name(0)}")

@@ -5,25 +5,51 @@ the released `OliBomby/Mapperatorinator-v32` checkpoint. Fine-tuning is only
 worth doing to chase a *specific mapper's style*, and it is the one part of this
 project that costs real GPU hours.
 
-## Corpus — do not write a fetcher
+## Corpus — stream it; do not download it
 
-Ranked corpora are already packaged on Hugging Face:
+`project-riz/osu-beatmaps` is the dataset the base `v32` config already points
+at, in WebDataset format: **74 `compressed/` shards** (64 kbps Opus) plus a
+larger `original/` variant. Records carry `json` (beatmap) + `opus` (audio).
 
-- `Tiger14n/osumaps19866` — ~19,866 `.osz`, organised by year/month
-- `project-riz/osu-beatmaps`
+**`train_dataset_streaming: true` is the default, so training needs no local
+copy at all.** Downloading the full set is ~299 GB and actively harmful here:
+it saturated the uplink hard enough to break DNS resolution for everything else
+on the machine (`git push` and `huggingface.co` both failed with
+`Temporary failure in name resolution` until the download was killed).
 
-`hf download` is resumable and needs no OAuth. The osu! API v2 serves metadata
-only and will not bulk-serve beatmap files, so scraping is both unnecessary and
-the wrong tool.
+Do **not** use `dataset_type: "mmrs"`. That format is produced by the
+Mapperator .NET console app and requires an **osu! OAuth client token** — a
+credential this project deliberately does not hold.
 
-Point `HF_HOME` at `~/osu-automapper_data/hf` and let the corpus land in
-`~/osu-automapper_data/corpus` — never inside the repository.
+`HF_HOME` points at `~/osu-automapper_data/hf`; nothing lands in the repo.
 
 ## LoRA
 
-Upstream ships `configs/train/lora_v32.yaml`. A LoRA needs **≥10
-style-consistent maps** to be worth training; fewer and it memorises rather than
-generalises. The result is consumed at inference through `lora_path=`:
+Upstream ships `configs/train/lora_v32.yaml`, but it expects a local `mmrs`
+dataset. Use `configs/train/lora_kuhy.yaml` instead (written by this project),
+which keeps the same LoRA hyperparameters and streams the web dataset:
+
+```bash
+cd ~/Mapperatorinator
+HF_HOME=~/osu-automapper_data/hf .venv/bin/python osuT5/train.py \
+  --config-name lora_kuhy
+```
+
+Confirmed on launch: 11,206,656 trainable of 227,511,552 total parameters
+(4.9%), base weights frozen.
+
+### Two overrides that config needs, and why
+
+- **`attn_implementation: 'sdpa'`** — `v32.yaml` asks for `flash_attention_2`,
+  but `flash-attn` is absent from `requirements.txt` (Docker-only), so training
+  dies with `ImportError` at model construction. Inference is unaffected because
+  it defaults to `auto` and falls back on its own.
+- **`checkpoint.every_steps: 100`** — the default is 5000, which would never
+  fire in a shorter run and would leave nothing on disk.
+
+A style LoRA needs **≥10 style-consistent maps** to be worth training; fewer and
+it memorises rather than generalises. The result is consumed at inference
+through `lora_path=`:
 
 ```bash
 .venv/bin/python inference.py \
