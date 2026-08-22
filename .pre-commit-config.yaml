@@ -1,0 +1,61 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: .venv/bin/ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: .venv/bin/ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: mypy
+        name: mypy --strict
+        entry: .venv/bin/mypy --strict osu_automapper tests
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: pytest
+        name: pytest (100% branch coverage)
+        entry: .venv/bin/pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+
+      - id: no-suppressions
+        name: block noqa / type-ignore
+        entry: '# *(noqa|type: *ignore)'
+        language: pygrep
+        types_or: [python, pyi]
+
+      - id: no-binaries
+        name: block binary files
+        entry: .*\.(png|jpg|jpeg|gif|mp3|ogg|osz|zip|so|o)$
+        language: fail
+        files: .*\.(png|jpg|jpeg|gif|mp3|ogg|osz|zip|so|o)$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=200]
