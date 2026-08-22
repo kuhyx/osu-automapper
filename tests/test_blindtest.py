@@ -214,3 +214,84 @@ def test_timing_points_at_the_end_of_a_file_are_still_cleared() -> None:
 
     text = "osu file format v14\n\n[TimingPoints]\n0,500,4,2,0,60,1,1\n"
     assert _clear_kiai(text).rstrip().endswith(",0")
+
+
+def test_a_map_without_a_colours_section_is_left_alone() -> None:
+    from osu_automapper.blindtest.harness import _strip_colours
+
+    text = "osu file format v14\n\n[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    assert _strip_colours(text) == text
+
+
+def test_colours_are_stripped_but_following_sections_survive() -> None:
+    from osu_automapper.blindtest.harness import _strip_colours
+
+    # A custom combo palette is a mapper's choice that generated maps never
+    # make, and it is visible on every hit -- but the section after it is real
+    # map content and must come through untouched.
+    text = (
+        "osu file format v14\n\n[Colours]\nCombo1 : 255,192,0\n"
+        "Combo2 : 0,202,0\n\n[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    )
+    result = _strip_colours(text)
+    assert "Combo1" not in result
+    assert "255,192,0" not in result
+    assert "[HitObjects]" in result
+    assert "256,192,0,1,0,0:0:0:0:" in result
+
+
+def test_colours_at_the_end_of_a_file_are_still_stripped() -> None:
+    from osu_automapper.blindtest.harness import _strip_colours
+
+    text = "osu file format v14\n\n[Colours]\nCombo1 : 255,192,0\n"
+    assert "Combo1" not in _strip_colours(text)
+
+
+def test_provenance_keys_are_dropped_entirely() -> None:
+    from osu_automapper.blindtest.harness import _anonymise
+
+    # Source and the Beatmap*ID pair are ranked-map metadata a generated map
+    # never carries, so their mere presence identifies a human entry.
+    text = (
+        "osu file format v14\n\n[General]\nOverlayPosition: Above\n\n"
+        "[Metadata]\nSource:Undertale\nBeatmapID:1234\nBeatmapSetID:5678\n\n"
+        "[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    )
+    result = _anonymise(text, "A")
+    assert "Undertale" not in result
+    assert "BeatmapID" not in result
+    assert "BeatmapSetID" not in result
+    assert "OverlayPosition" not in result
+
+
+def test_editor_state_is_normalised_rather_than_removed() -> None:
+    from osu_automapper.blindtest.harness import _anonymise
+
+    # Editor state is invisible while playing but splits the pack perfectly in
+    # a text editor, so it is held at one constant across every entry.
+    text = (
+        "osu file format v14\n\n[Editor]\nBookmarks:-330001\n"
+        "TimelineZoom: 2.20004\nGridSize: 8\n\n"
+        "[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    )
+    result = _anonymise(text, "A")
+    assert "-330001" not in result
+    assert "2.20004" not in result
+    assert "GridSize:4" in result
+
+
+def test_slider_multiplier_is_never_rewritten() -> None:
+    from osu_automapper.blindtest.harness import _anonymise
+
+    # Slider duration divides by SliderMultiplier, so rewriting a human map's
+    # 1.7 to a constant would stretch every slider and corrupt the entry the
+    # test exists to judge. It stays authored even though it is a known tell.
+    text = (
+        "osu file format v14\n\n[Difficulty]\nHPDrainRate:6.5\n"
+        "SliderMultiplier:1.7\nSliderTickRate:2\n\n"
+        "[HitObjects]\n256,192,0,1,0,0:0:0:0:\n"
+    )
+    result = _anonymise(text, "A")
+    assert "SliderMultiplier:1.7" in result
+    assert "SliderTickRate:2" in result
+    assert "HPDrainRate:5" in result

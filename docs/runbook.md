@@ -123,14 +123,43 @@ all difficulties, so mixing songs would give the answer away immediately. Match
 the generated maps' target difficulty to the human maps' *measured* star rating,
 or difficulty becomes the tell instead of mapping quality.
 
-Anonymisation covers more than metadata, because two non-obvious things leaked
-origin perfectly on the first real pack:
+Anonymisation covers far more than metadata. Four separate leaks each split a
+real pack perfectly, and every one was found by diffing rather than by thinking
+about it:
 
-| leak | why it gave the answer away |
-|---|---|
-| `[Events]` | human maps ship backgrounds/breaks/storyboards, generated maps ship none |
-| kiai (`effects` bit 0) | human maps kiai the chorus; the playfield pulses |
+| leak | why it gave the answer away | found |
+|---|---|---|
+| `[Events]` | human maps ship backgrounds/breaks/storyboards, generated ship none | 1st pack |
+| kiai (`effects` bit 0) | human maps kiai the chorus; the playfield pulses | 1st pack |
+| `[Editor]` + tool `[General]` keys | `Bookmarks:-330001`, `TimelineZoom: 2.20004`, `GridSize: 8`, `SampleSet: All`, `OverlayPosition` -- constant per *tool*, split `{A,B,F}` from `{C,D,E}` | 2nd pack |
+| `[Colours]`, `Source`, `Beatmap*ID`, HP/OD/AR/CS | ranked metadata and hand-tuned constants a sampler never emits | 2nd pack |
 
-Both are now stripped by `_anonymise`. When adding a new source of maps, diff a
-human entry against a generated one **before** playing, and check any field that
-differs systematically -- the gate does not catch leaks, only broken maps.
+All four are handled by `_anonymise`. The 2026-08-22 15:39 pack predates the
+last two and is **compromised** -- anyone reading the `.osu` files scores 6/6
+without playing.
+
+### Where anonymisation stops
+
+Scrub two categories and nothing else: **tool provenance** (editor state,
+`BeatmapID`, `Source`, `Tags` -- readable in a text editor, invisible in play)
+and **play-visible decoration** (backgrounds, kiai, combo colours). Anything a
+mapper *authored* stays exactly as written, even when it is a known tell:
+
+- **Timing points are not scrubbed.** Generated entries had 3 uninherited lines
+  and <=15 total against the humans' 1 and >=28 -- a perfect separator. But
+  barlines are not rendered in std gameplay, so it cannot help someone actually
+  playing, and rewriting the beat grid would unsnap the objects hanging off it.
+- **`SliderMultiplier`/`SliderTickRate` are not normalised.** Slider duration is
+  `pathLength / (SliderMultiplier * 100 * SV) * beatLength`, so forcing a human
+  map's 1.7 to 1.4 stretches every slider ~21% and makes it overrun the objects
+  after it. That corrupts the human entries *only*, biasing the test the wrong
+  way: a broken-feeling human map reads as "AI".
+
+A leak that merely rewards cheating is better than a "fix" that corrupts the
+maps under test. `PreviewTime` is normalised to a real timestamp rather than
+`-1`, because the gate rejects an unset preview.
+
+When adding a new source of maps, diff a human entry against a generated one
+**before** playing -- the gate does not catch leaks, only broken maps. Compare
+every `key:value` line above `[HitObjects]`, then gate all six entries to prove
+the normalisation did not break them.
