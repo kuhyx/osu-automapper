@@ -134,9 +134,12 @@ about it:
 | `[Editor]` + tool `[General]` keys | `Bookmarks:-330001`, `TimelineZoom: 2.20004`, `GridSize: 8`, `SampleSet: All`, `OverlayPosition` -- constant per *tool*, split `{A,B,F}` from `{C,D,E}` | 2nd pack |
 | `[Colours]`, `Source`, `Beatmap*ID`, HP/OD/AR/CS | ranked metadata and hand-tuned constants a sampler never emits | 2nd pack |
 
-All four are handled by `_anonymise`. The 2026-08-22 15:39 pack predates the
-last two and is **compromised** -- anyone reading the `.osu` files scores 6/6
-without playing.
+All four are handled by `_anonymise`. The 2026-08-22 **15:39 pack predates the
+last two fixes and is compromised** -- `check_blindtest_leaks.py` reports 19
+separating keys, so anyone reading the `.osu` files scores 6/6 without playing.
+It is superseded by `blindtest-20260822T165618.osz`, which is leak-clean, gates
+clean on all six entries, and was reshuffled so its A-F assignment does not
+carry over from the pack whose answer leaked.
 
 ### Where anonymisation stops
 
