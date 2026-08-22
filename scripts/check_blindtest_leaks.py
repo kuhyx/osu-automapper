@@ -45,6 +45,34 @@ def header_fields(text: str) -> dict[str, str]:
     return fields
 
 
+def section(text: str, name: str) -> list[str]:
+    """Return the non-comment, non-blank body lines of one ``[Section]``."""
+    _, marker, tail = text.partition(f"[{name}]")
+    if not marker:
+        return []
+    body = tail.partition("\n[")[0]
+    return [ln for ln in body.splitlines() if ln.strip() and not ln.startswith("//")]
+
+
+def counted_fields(text: str) -> dict[str, str]:
+    """Header keys plus the two leaks that are not ``key:value`` lines at all.
+
+    ``[Events]`` rows (`0,0,"BG.jpg",0,0`) and ``[TimingPoints]`` rows
+    (`0,500,4,2,0,60,1,1`) contain no colon, so a key:value scan skips them
+    entirely -- which would silently miss the first two leaks ever found. They
+    are folded in as synthetic count fields so the same overlap test covers them.
+    """
+    fields = header_fields(text)
+    fields["#events"] = str(len(section(text, "Events")))
+    kiai = 0
+    for row in section(text, "TimingPoints"):
+        parts = row.split(",")
+        if len(parts) >= 8 and parts[7].lstrip("-").isdigit() and int(parts[7]) & 1:
+            kiai += 1
+    fields["#kiai"] = str(kiai)
+    return fields
+
+
 def load_groups(archive: Path, key_path: Path) -> dict[bool, list[dict[str, str]]]:
     """Split the pack's entries into generated and human header maps."""
     answer = {e["label"]: e["generated"] for e in json.loads(key_path.read_text())["entries"]}
@@ -57,7 +85,7 @@ def load_groups(archive: Path, key_path: Path) -> dict[bool, list[dict[str, str]
             label = name.split("[")[-1].split("]")[0]
             if label in answer:
                 text = zf.read(name).decode("utf-8-sig", errors="replace")
-                groups[answer[label]].append(header_fields(text))
+                groups[answer[label]].append(counted_fields(text))
     return groups
 
 
