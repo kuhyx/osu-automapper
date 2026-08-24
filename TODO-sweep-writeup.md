@@ -126,3 +126,5 @@ That closes the project. Remaining ideas, none of them requested:
 a bigger blind test (cheap now — ~400 lazer maps joined to audio, and the 5/6
 p=0.11 result is the argument for it), and a mania LoRA (needs mania in
 `ckpt_subfolders`; a `gamemode=0` adapter is a silent no-op there).
+
+REMOVE ME AFTER FINISH

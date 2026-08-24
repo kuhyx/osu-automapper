@@ -37,18 +37,18 @@ outright. This repository therefore:
 - names its passing state **`technically rankable`** — meaning "well-formed",
   never "eligible"
 
-See [`docs/ranking-criteria.md`](docs/ranking-criteria.md). This is a local
+See [`docs/DOCS-ranking-criteria.md`](docs/DOCS-ranking-criteria.md). This is a local
 tool for a local question.
 
 ## Docs
 
 | | |
 |---|---|
-| [`runbook.md`](docs/runbook.md) | install, generate, check — and the traps |
-| [`gates.md`](docs/gates.md) | every check, and the measurements behind the thresholds |
-| [`landscape.md`](docs/landscape.md) | what already exists, and why Mapperatorinator |
-| [`finetuning.md`](docs/finetuning.md) | LoRA training, and the four traps that block it |
-| [`ranking-criteria.md`](docs/ranking-criteria.md) | the AI policy, sourced |
+| [`DOCS-runbook.md`](docs/DOCS-runbook.md) | install, generate, check — and the traps |
+| [`DOCS-gates.md`](docs/DOCS-gates.md) | every check, and the measurements behind the thresholds |
+| [`DOCS-landscape.md`](docs/DOCS-landscape.md) | what already exists, and why Mapperatorinator |
+| [`DOCS-finetuning.md`](docs/DOCS-finetuning.md) | LoRA training, and the four traps that block it |
+| [`DOCS-ranking-criteria.md`](docs/DOCS-ranking-criteria.md) | the AI policy, sourced |
 
 ## Architecture
 
