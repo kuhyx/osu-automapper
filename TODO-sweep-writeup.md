@@ -30,9 +30,12 @@ from the cells already on disk:
 from pathlib import Path
 from osu_automapper.sweep.model import SweepOutcome
 from osu_automapper.sweep.report import to_markdown
+
 results = Path.home() / "osu-automapper_data" / "sweep"
-outcomes = [SweepOutcome.from_json(p.read_text(encoding="utf-8"))
-            for p in sorted(results.glob("*_base.json"))]
+outcomes = [
+    SweepOutcome.from_json(p.read_text(encoding="utf-8"))
+    for p in sorted(results.glob("*_base.json"))
+]
 print(to_markdown(outcomes))
 ```
 (Glob `*_base.json`, not `*.json` — `songs.json` shares that directory and is a
