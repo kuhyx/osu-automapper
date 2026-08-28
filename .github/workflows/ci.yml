@@ -17,7 +17,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Create venv and install
         run: |
-          uv venv --python 3.12 .venv
+          # One Python, always the newest. `uv` takes a concrete minor and
+          # resolves the newest patch itself, downloading the interpreter
+          # when the runner image has not got it -- `3.x` is setup-python
+          # syntax and uv rejects it.
+          uv venv --python 3.14 .venv
           VIRTUAL_ENV=.venv uv pip install -e ".[dev]"
       - name: Ruff lint
         run: .venv/bin/ruff check .
