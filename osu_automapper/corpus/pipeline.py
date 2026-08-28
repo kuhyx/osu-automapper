@@ -64,7 +64,7 @@ def probe_audio(path: Path) -> AudioCandidate | None:
     try:
         payload = json.loads(result.stdout or "{}").get("format", {})
         duration = float(payload.get("duration", 0) or 0)
-    except (ValueError, json.JSONDecodeError):
+    except ValueError, json.JSONDecodeError:
         return None
     if duration <= 0:
         return None

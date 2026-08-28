@@ -202,7 +202,7 @@ def parse_beatmap(path: Path) -> Beatmap:
         if "osu file format v" in line:
             try:
                 version = int(line.split("osu file format v")[1].strip())
-            except (IndexError, ValueError):
+            except IndexError, ValueError:
                 version = 0
             break
     else:

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================
-# osu-automapper installer: upstream (torch, py3.10) and our own (py3.12) venv.
+# osu-automapper installer: upstream (torch, py3.10) and our own (py3.14) venv.
 # Idempotent -- re-running is a no-op.
 # ============================================================================
 
@@ -14,7 +14,10 @@ readonly UPSTREAM_URL="https://github.com/OliBomby/Mapperatorinator.git"
 readonly UPSTREAM_DIR="${MAPPERATORINATOR_HOME:-$HOME/Mapperatorinator}"
 readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
 readonly UPSTREAM_PYTHON="3.10"
-readonly OUR_PYTHON="3.12"
+# Our own code runs exactly one Python and it is the newest. UPSTREAM_PYTHON
+# stays 3.10 because Mapperatorinator is OliBomby's repo, not ours, and its
+# torch pins are what fix that number.
+readonly OUR_PYTHON="3.14"
 # CUDA 13.0 wheels: the 3090 (driver 610.x) runs these, and pinning the index
 # keeps pip from silently resolving a CPU-only build from PyPI.
 readonly TORCH_INDEX="https://download.pytorch.org/whl/cu130"
