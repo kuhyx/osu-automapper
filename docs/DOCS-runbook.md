@@ -103,7 +103,7 @@ are in `docs/lazer-library.md` — read that before writing any extraction code.
 ```
 
 Resumable: each cell writes its own JSON, and existing cells are skipped. See
-`docs/sweep.md` for the grid, the two-gate design, and the songs used.
+`docs/DOCS-sweep.md` for the grid, the two-gate design, and the songs used.
 
 ## Blind test (Phase 3, never CI)
 
