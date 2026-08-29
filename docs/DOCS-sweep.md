@@ -69,30 +69,133 @@ range** over more seeds on one.
 The songs used here were pulled from the local lazer library, which is also
 where the human maps for the blind test come from. See `docs/lazer-library.md`.
 
-## First measured finding: the song dominates
+## Results: the full 180-cell sweep
 
-Partway through the first full sweep, with two songs done:
+6 songs x 5 difficulties x 2 gamemodes x 3 seeds. **All 180 cells generated**;
+raw pass 41%, after repair 47%, `t=0` defect fired in 12%. Every cell is the
+**base model** -- no adapter was swept, so the mania rows below are *base*
+mania and are not evidence about a LoRA either way (a `gamemode=0` adapter is
+silently ignored in mania; see `docs/DOCS-finetuning.md`).
 
-| song | BPM | cells | passed | `objects_snapped` failures |
-|---|---:|---:|---:|---:|
-| `celldweller_weaponized` | 100 | 30 | 23 | 1 |
-| `dschinghis_khan_moskau` | 131 | 22 | 0 | 22 |
+### By difficulty
 
-Every Moskau cell failed, at every difficulty, in both gamemodes. The cause is
-the song, not the difficulty: Moskau is a 1970s recording with **43 uninherited
-timing points** and drifting BPM, and the model places objects 5-10 ms off the
-grid just after a timing-point change (measured: 9.00 ms, 5.00 ms, 10.00 ms
-against the correct active red line, versus a 2 ms tolerance and the ~1.4 ms p99
-error seen across 300 ranked maps).
+| target | n | raw pass | after repair | t=0 defect | mean star error | mean objects |
+|---|---:|---:|---:|---:|---:|---:|
+| 3* | 36 | 56% | 61% | 8% | +0.31 | 1010 |
+| 4* | 36 | 42% | 47% | 11% | -0.05 | 1220 |
+| 5* | 36 | 28% | 42% | 17% | -0.49 | 1332 |
+| 6* | 36 | 42% | 47% | 11% | -0.74 | 1536 |
+| 7* | 36 | 36% | 39% | 11% | -1.25 | 1585 |
 
-That is a real model limitation, confirmed by re-deriving the snap error by hand
-against the active timing point rather than trusting the gate. **Do not respond
-by loosening `SNAP_TOLERANCE_MS`** -- see the divisor-family note in
-`docs/gates.md`.
+### By gamemode
 
-The methodological point is the important one: a sweep of one song would have
-concluded "the model is reliable" or "the model is broken" purely on which song
-was picked. Spend the budget on songs, not seeds.
+| mode | n | raw pass | after repair | t=0 defect | mean star error | mean objects |
+|---|---:|---:|---:|---:|---:|---:|
+| std | 90 | 51% | 64% | 17% | -0.28 | 635 |
+| mania | 90 | 30% | 30% | 7% | -0.61 | 2037 |
+
+### By song, split by mode
+
+Uninherited timing points are counted per generated map (they are the model's
+own timing inference, so they vary cell to cell); median and range across that
+song's 30 cells. Pass counts are after repair.
+
+| song | BPM | uninherited TPs | std pass | mania pass | snap-fail cells |
+|---|---:|---:|---:|---:|---:|
+| `celldweller_weaponized` | 100 | 1 (1-1) | 13/15 | 10/15 | 1 |
+| `dschinghis_khan_moskau` | 131 | 46 (35-77) | **0/15** | **0/15** | 30 |
+| `night_of_knights` | 153 | 3 (2-4) | 12/15 | 14/15 | 2 |
+| `pegboard_nerds_emoji` | 163 | 8 (4-16) | 12/15 | 2/15 | 16 |
+| `pup_free_at_last` | 179 | 10 (5-14) | 6/15 | 0/15 | 24 |
+| `toby_fox_megalovania` | 240 | 3 (2-7) | **15/15** | 1/15 | 14 |
+
+`objects_snapped` is the sweep's dominant failure by an order of magnitude: it
+accounts for 87 of the 103 post-repair check failures, against
+`hold_notes_ordered` 8, `no_column_collisions` 4, `positions_in_playfield` 3
+and `object_gaps` 1.
+
+## What the data says
+
+### In standard, it is timing-point density -- not tempo
+
+The old two-song headline ("the song dominates") was right about the effect and
+wrong about the cause. In std the pass rate falls monotonically with the number
+of uninherited timing points and has no relationship to BPM at all:
+1 TP -> 13/15, 3 TPs -> 12-15/15, 8 TPs -> 12/15, 10 TPs -> 6/15, 46 TPs -> 0/15.
+
+`toby_fox_megalovania` was run as the discriminating case and it settles it:
+**the fastest song in the sweep, at 240 BPM, passes 15/15 in std.** The slowest
+failing song, Moskau, is 131 BPM. Tempo is ruled out.
+
+Moskau remains the one systemic failure. It is a 1970s recording with drifting
+BPM, and the model emits **35-77 uninherited timing points** for it (the
+earlier "43" was a single cell read as a constant). The model then places
+objects 5-10 ms off the grid just after a timing-point change -- measured by
+hand at 9.00 ms, 5.00 ms and 10.00 ms against the correct active red line,
+versus a 2 ms tolerance and the ~1.4 ms p99 error across 300 ranked maps.
+**Do not respond by loosening `SNAP_TOLERANCE_MS`** -- see the divisor-family
+note in `docs/DOCS-gates.md`.
+
+### In mania, tempo *does* bite, above roughly 160 BPM
+
+The mode split is the finding the song-level table hides. Above ~160 BPM every
+mania group collapses while std holds: Emoji 2/15 vs 12/15, Free At Last 0/15
+vs 6/15, MEGALOVANIA 1/15 vs 15/15. Below that, mania is fine (Weaponized
+10/15, Night of Knights 14/15).
+
+The clean pair is `night_of_knights` vs `toby_fox_megalovania`: **identical
+median timing-point density (3), 153 vs 240 BPM, mania 14/15 vs 1/15.** Timing
+points held constant, tempo alone flips the result -- the mirror image of the
+std comparison above.
+
+### It is not just "more notes, more chances"
+
+Mania averages 2037 objects a cell against std's 635, so the obvious confound is
+exposure. It does not survive: `night_of_knights` mania is the **densest** group
+in the whole sweep at 2826 objects a cell and has **zero** snap failures, while
+`toby_fox_megalovania` mania has fewer objects (2037) and fails 14/15. Object
+count does not order the failures; BPM does.
+
+### `repair` recovers std cells and never a mania one
+
+Std goes 51% raw -> 64% repaired; mania goes 30% -> 30%, exactly. The
+stacked-at-zero artifact that `repair` exists to strip is a std-side defect
+(17% of std cells vs 7% of mania), and in mania it never happened to be the
+thing standing between a cell and the gate.
+
+### Star error drifts negative with difficulty
+
+Orthogonal to the song story, and monotone across all five rows: +0.31 at 3*,
+-0.05 at 4*, -0.49 at 5*, -0.74 at 6*, -1.25 at 7*. The model overshoots easy
+targets slightly and **undershoots hard ones badly** -- ask for 7* and you get
+about 5.75*. Object counts do rise with the target (1010 -> 1585), so it is
+producing more, just not proportionally harder, maps.
+
+### The gate is binary; the failures are not
+
+A failing cell is one bad object or a hundred, and the table cannot tell them
+apart. Counting the actual unsnapped objects separates them:
+
+| group | failing cells | unsnapped objects | per cell |
+|---|---:|---:|---:|
+| Moskau mania | 15 | 149 | 9 |
+| Free At Last mania | 15 | 176 | 11 |
+| Moskau std | 15 | 52 | 3 |
+| Emoji mania | 13 | 33 | 2 |
+| MEGALOVANIA mania | 14 | 24 | ~2 |
+| everything else (std) | 15 | 16 | 1 |
+
+Most non-Moskau failures are **one off-grid note in 500-2500** -- technically
+unrankable and correctly caught, but a very different object from Moskau, where
+the timing is wrong throughout. Read the pass rates as "cleared a strict gate",
+not as "unusable".
+
+### The methodological point stands
+
+A sweep of one song would have concluded "the model is reliable" or "the model
+is broken" purely on which song was picked, and a sweep of std alone would have
+missed the mania tempo wall entirely. Spend the budget on songs and modes, not
+on seeds.
 
 ## Exit codes
 
