@@ -42,7 +42,7 @@ def main() -> int:
     parser.add_argument(
         "--destination",
         type=Path,
-        default=Path.home() / "osu-automapper_data" / "blindtest",
+        default=Path.home() / "data/osu-automapper_data" / "blindtest",
     )
     args = parser.parse_args()
 

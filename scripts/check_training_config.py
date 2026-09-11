@@ -16,7 +16,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MIRROR = REPO_ROOT / "docs" / "lora_kuhy.yaml"
-LIVE = Path.home() / "Mapperatorinator" / "configs" / "train" / "lora_kuhy.yaml"
+LIVE = Path.home() / "vendor/Mapperatorinator" / "configs" / "train" / "lora_kuhy.yaml"
 
 
 def check(text: str) -> list[str]:

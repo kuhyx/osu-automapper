@@ -10,8 +10,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_MAPPERATORINATOR_HOME = Path.home() / "Mapperatorinator"
-DEFAULT_DATA_ROOT = Path.home() / "osu-automapper_data"
+DEFAULT_MAPPERATORINATOR_HOME = Path.home() / "vendor/Mapperatorinator"
+DEFAULT_DATA_ROOT = Path.home() / "data/osu-automapper_data"
 
 
 @dataclass(frozen=True)
