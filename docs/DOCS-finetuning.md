@@ -21,7 +21,7 @@ Do **not** use `dataset_type: "mmrs"`. That format is produced by the
 Mapperator .NET console app and requires an **osu! OAuth client token** — a
 credential this project deliberately does not hold.
 
-`HF_HOME` points at `~/osu-automapper_data/hf`; nothing lands in the repo.
+`HF_HOME` points at `~/data/osu-automapper_data/hf`; nothing lands in the repo.
 
 ## LoRA
 
@@ -30,8 +30,8 @@ dataset. Use `configs/train/lora_kuhy.yaml` instead (written by this project),
 which keeps the same LoRA hyperparameters and streams the web dataset:
 
 ```bash
-cd ~/Mapperatorinator
-HF_HOME=~/osu-automapper_data/hf .venv/bin/python osuT5/train.py \
+cd ~/vendor/Mapperatorinator
+HF_HOME=~/data/osu-automapper_data/hf .venv/bin/python osuT5/train.py \
   --config-name lora_kuhy
 ```
 
@@ -119,10 +119,10 @@ the `lora=` path used.
 A run leaves a pile of adapters nobody has looked at. `scripts/eval_checkpoints.sh`
 turns them into numbers: it generates one map per checkpoint plus a no-LoRA
 baseline, all at the same seed and difficulty, gates each, and writes
-`~/osu-automapper_data/lora/results.tsv`.
+`~/data/osu-automapper_data/lora/results.tsv`.
 
 ```bash
-cd ~/osu-automapper && ./scripts/eval_checkpoints.sh
+cd ~/src/osu-automapper && ./scripts/eval_checkpoints.sh
 SEED=99 DIFFICULTY=4.0 ./scripts/eval_checkpoints.sh   # or vary the probe
 ```
 

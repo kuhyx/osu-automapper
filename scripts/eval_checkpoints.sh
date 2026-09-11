@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 readonly SCRIPT_DIR REPO_DIR
-readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
+readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/data/osu-automapper_data}"
 readonly SONG="${SONG:-$DATA_ROOT/songs/night_of_knights.mp3}"
 readonly SEED="${SEED:-555}"
 readonly DIFFICULTY="${DIFFICULTY:-5.0}"
@@ -87,7 +87,7 @@ find_training_run() {
             printf '%s\n' "$dir"
             return 0
         fi
-    done < <(find "$HOME/Mapperatorinator/logs" -mindepth 2 -maxdepth 2 -type d \
+    done < <(find "$HOME/vendor/Mapperatorinator/logs" -mindepth 2 -maxdepth 2 -type d \
         -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
     return 1
 }
@@ -95,7 +95,7 @@ find_training_run() {
 main() {
     local run_dir
     run_dir="$(find_training_run)" || {
-        echo "Error: no training run with checkpoints found under ~/Mapperatorinator/logs" >&2
+        echo "Error: no training run with checkpoints found under ~/vendor/Mapperatorinator/logs" >&2
         exit 1
     }
 

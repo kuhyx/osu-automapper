@@ -11,8 +11,8 @@ SCRIPT_NAME="$(basename "$0")"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_NAME REPO_DIR
 readonly UPSTREAM_URL="https://github.com/OliBomby/Mapperatorinator.git"
-readonly UPSTREAM_DIR="${MAPPERATORINATOR_HOME:-$HOME/Mapperatorinator}"
-readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
+readonly UPSTREAM_DIR="${MAPPERATORINATOR_HOME:-$HOME/vendor/Mapperatorinator}"
+readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/data/osu-automapper_data}"
 readonly UPSTREAM_PYTHON="3.10"
 # Our own code runs exactly one Python and it is the newest. UPSTREAM_PYTHON
 # stays 3.10 because Mapperatorinator is OliBomby's repo, not ours, and its

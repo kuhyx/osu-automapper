@@ -3,18 +3,18 @@
 ## Install
 
 ```bash
-cd ~/osu-automapper && ./install.sh
+cd ~/src/osu-automapper && ./install.sh
 ```
 
 Idempotent. Creates two virtualenvs, clones upstream, prepares
-`~/osu-automapper_data/`, and prints an environment probe.
+`~/data/osu-automapper_data/`, and prints an environment probe.
 
 ### Why two virtualenvs
 
 | venv | Python | Holds |
 |---|---|---|
-| `~/Mapperatorinator/.venv` | 3.10 | torch, torchaudio, transformers, the checkpoint |
-| `~/osu-automapper/.venv` | 3.12 | slider, rosu-pp-py, pytest, ruff, mypy |
+| `~/vendor/Mapperatorinator/.venv` | 3.10 | torch, torchaudio, transformers, the checkpoint |
+| `~/src/osu-automapper/.venv` | 3.12 | slider, rosu-pp-py, pytest, ruff, mypy |
 
 This package **never imports torch**. Upstream is driven by subprocess, which is
 what keeps the test suite at 100% branch coverage and CI free of CUDA.
@@ -45,8 +45,8 @@ what keeps the test suite at 100% branch coverage and CI free of CUDA.
 Through this repo (records every input, so a run is repeatable):
 
 ```bash
-./run.sh generate ~/osu-automapper_data/songs/<song>.mp3 \
-  ~/osu-automapper_data/out/std \
+./run.sh generate ~/data/osu-automapper_data/songs/<song>.mp3 \
+  ~/data/osu-automapper_data/out/std \
   --difficulty 5.5 --year 2023 --seed 1337 \
   --title "<Title>" --artist "<Artist>" --preview-time 1598
 
@@ -58,10 +58,10 @@ Or drive upstream directly. Its Hydra config is `configs/inference/v32.yaml`
 (there is no `configs/inference.yaml`).
 
 ```bash
-cd ~/Mapperatorinator
-HF_HOME=~/osu-automapper_data/hf .venv/bin/python inference.py \
-  audio_path=~/osu-automapper_data/songs/<song>.mp3 \
-  output_path=~/osu-automapper_data/out/std \
+cd ~/vendor/Mapperatorinator
+HF_HOME=~/data/osu-automapper_data/hf .venv/bin/python inference.py \
+  audio_path=~/data/osu-automapper_data/songs/<song>.mp3 \
+  output_path=~/data/osu-automapper_data/out/std \
   gamemode=0 difficulty=5.5 year=2023 export_osz=true seed=1337 \
   title="<Title>" artist="<Artist>" preview_time=1598
 ```
@@ -81,8 +81,8 @@ Measured on an RTX 3090: ~4 s timing + ~35 s map for a 3½-minute song.
 ## Check
 
 ```bash
-cd ~/osu-automapper
-./run.sh check ~/osu-automapper_data/out/std/extracted/*.osu --target-difficulty 5.5
+cd ~/src/osu-automapper
+./run.sh check ~/data/osu-automapper_data/out/std/extracted/*.osu --target-difficulty 5.5
 echo "exit=$?"
 ./run.sh check <map.osu> --json          # machine-readable
 ```

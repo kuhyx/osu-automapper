@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 readonly SCRIPT_DIR REPO_DIR
-readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
+readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/data/osu-automapper_data}"
 readonly BLIND_DIR="$DATA_ROOT/blindtest"
 
 PACK=""

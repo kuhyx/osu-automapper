@@ -44,14 +44,14 @@ adapter has a baseline to be compared against. Mania cells get `--keycount`
 ./run.sh sweep --dry-run
 
 # One song, one axis, plus two adapters.
-./run.sh sweep --songs ~/osu-automapper_data/songs/x.mp3 \
+./run.sh sweep --songs ~/data/osu-automapper_data/songs/x.mp3 \
     --difficulties 4 5 6 --gamemodes 0 --seeds 1 2 3 \
-    --lora-paths ~/Mapperatorinator/logs/*/checkpoints/checkpoint_11/lora
+    --lora-paths ~/vendor/Mapperatorinator/logs/*/checkpoints/checkpoint_11/lora
 ```
 
 ## Resumption
 
-Each cell writes `~/osu-automapper_data/sweep/<label>.json` the moment it
+Each cell writes `~/data/osu-automapper_data/sweep/<label>.json` the moment it
 finishes, and a cell whose file already exists is skipped. A sweep that dies at
 cell 130 of 180 therefore loses one cell, not an afternoon — just run it again.
 
@@ -210,7 +210,7 @@ command. A cell that never produced a map does.
 
 ## The songs swept
 
-A manifest is written to `~/osu-automapper_data/sweep/songs.json`; this table is
+A manifest is written to `~/data/osu-automapper_data/sweep/songs.json`; this table is
 the committed copy, because a "By song" row is uninterpretable without the BPM.
 Five were pulled from the lazer library to span the tempo range (see
 `docs/lazer-library.md`); `night_of_knights` predates the sweep.

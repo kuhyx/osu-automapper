@@ -22,13 +22,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
+readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/data/osu-automapper_data}"
 readonly CORPUS_DIR="$DATA_ROOT/corpus"
 readonly SHARD_DIR="$CORPUS_DIR/compressed"
 # Neither the `hf` CLI nor huggingface_hub is on PATH or in this repo's venv;
 # both ship in the upstream sibling's venv, which is read, never modified.
-readonly HF="${HF_CLI:-$HOME/Mapperatorinator/.venv/bin/hf}"
-readonly HF_PYTHON="${HF_PYTHON:-$HOME/Mapperatorinator/.venv/bin/python}"
+readonly HF="${HF_CLI:-$HOME/vendor/Mapperatorinator/.venv/bin/hf}"
+readonly HF_PYTHON="${HF_PYTHON:-$HOME/vendor/Mapperatorinator/.venv/bin/python}"
 
 REPO_ID="${REPO_ID:-kuhy/osu-mapsets-lazer}"
 DRY_RUN=0

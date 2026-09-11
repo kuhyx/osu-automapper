@@ -214,6 +214,6 @@ all 9 shards.
 
 Neither the `hf` CLI nor `huggingface_hub` is on `PATH` or in this repo's venv;
 both are read out of the upstream sibling's venv
-(`~/Mapperatorinator/.venv/`), which is never modified. The manifest is uploaded
+(`~/vendor/Mapperatorinator/.venv/`), which is never modified. The manifest is uploaded
 alongside the shards because it lives one level *above* `compressed/` and would
 otherwise be left behind.

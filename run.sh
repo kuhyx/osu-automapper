@@ -9,7 +9,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_DIR
-readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/osu-automapper_data}"
+readonly DATA_ROOT="${OSU_AUTOMAPPER_DATA:-$HOME/data/osu-automapper_data}"
 
 export HF_HOME="$DATA_ROOT/hf"
 
